@@ -1,0 +1,1157 @@
+
+
+Software Setup:
+
+1.windows 10
+2.jdk-11
+3.maven / gradle
+4.IDE - intelliJ idea
+5.docker
+..............................................................................................
+
+Java.
+
+Vertx:
+.....
+   Vertx is toolkit to build modern distribued apps
+   Vertx apps runs on JVM.
+   Vertx apps can be written using JVM languages -  Java PL,Kotlin,Groovy
+
+Vertx builds on 
+   =>Java Functional Programming
+   =>Reactive Programming using Rxjava /Mutiny
+   =>MicroService Pattern language implementation
+............................................................................................
+
+...........................................................................................
+				What is functional Programming?
+
+-Functional programming is one the programming paradigm.
+
+
+Programming paradigm: Way to build
+->Object oriented
+->Procedural oriented
+->Functional Programming
+->Event Driven Programming
+->Reactive Programming
+etc.....
+
+OO Principles:
+
+1.Abstraction
+  You take necessary things from the object.
+  class - is tool to capture object characteristics(state,behaviour,identity)
+2.Encapsulation
+  Hide and unhide  
+  To limit code sharing across the application.
+3.Hierarchy
+   organization
+  -has-a - compostion
+  -IS-A - inheritance
+4.Typing
+  Type System
+    - Strong Typing / Static Typing
+    - Weak Typing/Dynamic Typing
+   Polymorphism
+     static poly
+     dynamic poly
+5.Modularity
+   How to organize code
+   packages
+----------------------
+6.Concurrency
+   Threading
+7.Persistency
+   saving main memory data into disk and sending via network.
+   seriazliation
+
+If any language implements the first 5 principles, those languages are called object oriented
+languages.
+
+Lambda Calculus:
+
+  It is another mathematical approach like state machine to represent state in 
+  memory and mutate it.
+    Lambda calculus (also written as λ-calculus) is a formal system in mathematical
+logic for expressing computation based on function abstraction and application using variable binding and substitution.
+
+Lambda Calculus invented by The "Alonzo Church" , Who was PHD student of "Alan Turning"..
+				Lambda Calculs and programming languages
+
+
+The programming language which follows lambda principles those languages are called "Functional programming".
+
+Most powerfull functional programming languages
+
+1.LISP
+2.CommonLisp
+3.Haskell
+4.Scheme
+
+Java Dialects: Runs on Jvm
+
+1.Groovy - Functional + object oriented PL 
+2.Scala
+3.Clojure
+4.Java 8
+5.Kotlin
+
+..............................................................................................
+
+Functional Programming Principles:
+
+1.Functions are first class citizens 
+2.Higher order Functions
+.....
+
+3.pure functions 
+   =>impure function,side effects/disciplined states
+4.Immutablity
+   =>state mutatations
+5.Referencial transparency
+...................................................
+
+6.Recurrsion over loops
+.............................................................................................
+
+Functional Style vs Pure functionals:
+
+ if any programming lanuage follows all the principles 100%, those languages are called "Pure funcitonal programming language" eg : Haskell
+
+if any programming lanugage does not follow all principles, those languages are called "
+functional style lanugage" - javascript,scala,Kotlin,java8,python....
+
+Java8 = OO + FP => Java 8 on wards Hybrid lanaugage.
+
+..............................................................................................
+			Lets code
+
+
+How to implement functional Programming in Java 8?
+
+"lambda calculs implemenation in java through interfaces"
+
+Use case of interface :
+ -Inheritance
+ -To hide many implementation under one single type.
+ -inner classes
+
+
+Inheritance;
+package com.unisys.fp.interfaces;
+
+//interfaces
+interface Greeter {
+    String sayGreet();
+}
+
+class HelloImpl implements Greeter {
+    @Override
+    public String sayGreet() {
+        return "Hello";
+    }
+}
+class HaiImpl implements Greeter {
+    @Override
+    public String sayGreet() {
+        return "Hai!!!";
+    }
+}
+public class MainApp {
+    public static void main(String[] args) {
+        Greeter greeter = null;
+        //implementation
+        greeter = new HelloImpl();
+        System.out.println(greeter.sayGreet());
+        //hai
+        greeter = new HaiImpl();
+        System.out.println(greeter.sayGreet());
+
+
+
+    }
+}
+
+Objective: to implement interface and have different greet logic.
+
+
+1.implement interface with a class , override methods.
+
+
+What is the problem with above code?
+
+- every time we need to create a separate class, override methods, create object , call methods
+- increases lot of implementation classes, which increases code maintainance.
+
+
+How to reduce code without declaring class?
+
+Solution:
+
+- inner classes.
+    a class within a class
+
+Types of inner classes:
+
+1.regular inner class
+2.static inner classes
+3.method local inner classes
+4.anonmous inner classes
+
+Anonmous inner classes:
+ -It is call without class itself, still we can override methods and call.
+Compiler will provide classes during compile time.
+//Anonmous Innerclasses
+        greeter = new Greeter() {
+            @Override
+            public String sayGreet() {
+                return "Hello Again";
+            }
+        };
+        System.out.println(greeter.sayGreet());
+
+        greeter = new Greeter() {
+            @Override
+            public String sayGreet() {
+                return "Hai Again";
+            }
+        };
+        System.out.println(greeter.sayGreet());
+
+.............................................................................................
+			  Functional Programming Implementation
+
+Implmentation: Principle -1 :Functions are first class citizen:
+..................................
+
+First class Citizen: (special):
+
+functions are passed around .(in,out)
+
+This means the language supports passing functions as arguments to other functions, returning them as the values from other functions, and assigning them to variables or storing them in data structures.
+
+int a =10;
+
+Here
+ int - data type
+ a is variable
+ 10 -  literal(value).
+
+               IN FP , function itself is literal(value)
+Common Syntax:
+
+Function f = sayGreet() {
+   return "Hello";
+}
+
+Function- Data Type
+f -variable
+sayGreet() {} - Value(literal)
+
+Java 8 Provides Function Type as "Interface"  - Functional Interface.
+
+InterfaceType f = sayGreet() {
+   return "Hello";
+}
+Why this Concept?
+
+ -Reducing Code- More readable,Declarative code.
+
+package com.unisys.fp.functionalinterfaces;
+
+//interface
+interface Greeter {
+    String sayGreet();
+}
+
+public class FunctionalMain {
+    public static void main(String[] args) {
+        Greeter greeter = null;
+        //using old anonmous inner class Syntax
+        greeter = new Greeter() {
+            @Override
+            public String sayGreet() {
+                return "Hai";
+            }
+        };
+        System.out.println(greeter.sayGreet());
+        //using Functional Style : Lambda Style
+        greeter = () -> {
+            return "Hai Lambda";
+        };
+        System.out.println(greeter.sayGreet());
+
+    }
+}
+............................................................................................
+..............................................................................................
+				   Functional Interface
+..............................................................................................
+
+Is any difference between functional interface and regular interfaces?
+
+
+Yes!.
+
+Functional interface features:
+
+->functional interface must have only one abstract method. - SAM - Single Abstract methods.
+->functional interface can have other implementation methods - default methods.
+->functional interface can have static methods.
+->functional interface may be annotated with "@FunctionalInterface".
+
+
+functional interface must have only one abstract method. - SAM - Single Abstract methods.
+This is based on "SRP" - Single Responsiblity Principle
+
+				@FunctionalInterface annotation
+
+functional interface may be annotated with "@FunctionalInterface".
+
+An informative annotation type used to indicate that an interface type declaration is intended to be a functional interface as defined by the Java Language Specification. Conceptually, a functional interface has exactly one abstract method.
+
+Why this annotation?
+
+-Readability - for documentation purpose.
+-To avoid compile error during lambda declaration, compile time error can be dededucted during
+ interface declaration itself.
+@FunctionalInterface
+
+
+
+package com.unisys.fp;
+
+//regular interface :having multiple abstract methods
+//interface Greeter {
+//    String sayGreet();
+//    String sayHello();
+//}
+//Functional Interface
+@FunctionalInterface
+interface Greeter {
+    //SAM - single abstract method
+    String sayGreet();
+    //implementation - default methods
+    default String sayHello() {
+        return "Hello";
+    }
+    static String sayHai(){
+        return "Hai";
+    }
+}
+
+
+public class FunctionalInterfaceRules {
+    public static void main(String[] args) {
+        Greeter greeter = null;
+        greeter = () -> {
+            return "Hello";
+        };
+        System.out.println(greeter.sayGreet());
+        System.out.println(greeter.sayHello());
+        System.out.println(Greeter.sayHai());
+    }
+}
+
+.............................................................................................
+		         Functional interface methods args and Return Type
+				
+..............................................................................................
+package com.unisys.fp;
+
+@FunctionalInterface
+interface Welcome {
+    //no arg , no return
+    void sayHello();
+}
+
+@FunctionalInterface
+interface Server {
+    void connect(String host, int port);
+}
+
+
+public class FunctionalArgs {
+    public static void main(String[] args) {
+        Welcome welcome = null;
+        welcome = () -> {
+            System.out.println("Hello");
+        };
+        welcome.sayHello();
+        //
+        Server server = null;
+        server = (String host, int port) -> {
+            System.out.println("Host :" + host + " " + "Port :" + port);
+        };
+        //call function and pass parameters
+        server.connect("localhost", 8000);
+        //reduce the type of variable :Type inference
+        server = (host, port) -> {
+            System.out.println("Host :" + host + " " + "Port :" + port);
+        };
+        //call function and pass parameters
+        server.connect("localhost", 8000);
+
+    }
+}
+.............................................................................................
+				  Type Inference
+............................................................................................
+
+In the arg here we have string
+
+   myname = (String name)->{
+            System.out.println(name);
+   };
+ myname.setName("Subramanian");
+
+We can remove the "Type", that means it understood by default based on interface type: Type interfence.
+
+    myname = (name) -> System.out.println(name);
+        //"Subramanian" - params
+    myname.setName("Subramanian");
+
+We can remove () , if there is no type and if there is only one arg
+    myname = name -> System.out.println(name);
+        //"Subramanian" - params
+        myname.setName("Subramanian");
+..............................................................................................
+				More than One params
+
+
+package com.cts.fp.params;
+
+@FunctionalInterface
+public interface Adder {
+    void add(int a, int b);
+}
+
+
+    //two args
+        Adder adder = null;
+
+        adder = (int a, int b) -> {
+            int c = a + b;
+            System.out.println("Add " + c);
+        };
+        adder.add(10, 10);
+        adder = (a, b) -> {
+            int c = a + b;
+            System.out.println("Add " + c);
+        };
+        adder.add(10, 10);
+..............................................................................................
+package com.unisys.fp;
+
+@FunctionalInterface
+interface Welcome {
+    //no arg , no return
+    void sayHello();
+}
+
+@FunctionalInterface
+interface Server {
+    void connect(String host, int port);
+}
+@FunctionalInterface
+interface Adder{
+    void add(int a,int b);
+}
+
+class Log {
+    public void info(String info) {
+        System.out.println(info);
+    }
+}
+@FunctionalInterface
+interface LoggerService {
+    void log(Log log);
+}
+
+public class FunctionalArgs {
+    public static void main(String[] args) {
+        Welcome welcome = null;
+        welcome = () -> {
+            System.out.println("Hello");
+        };
+        welcome.sayHello();
+        //
+        Server server = null;
+        server = (String host, int port) -> {
+            System.out.println("Host :" + host + " " + "Port :" + port);
+        };
+        //call function and pass parameters
+        server.connect("localhost", 8000);
+        //reduce the type of variable :Type inference
+        server = (host, port) -> {
+            System.out.println("Host :" + host + " " + "Port :" + port);
+        };
+        //call function and pass parameters
+        server.connect("localhost", 8000);
+
+        Adder adder = (a,b)-> {
+            System.out.println(a + b);
+        };
+        adder.add(10,20);
+        //object
+        LoggerService loggerService = (log)-> {
+            log.info("logging...");
+        };
+        loggerService.log(new Log());
+
+    }
+}
+...........................................................................................
+					Return Values
+............................................................................................
+
+
+package com.unisys.fp;
+
+@FunctionalInterface
+interface Multipler {
+    int multiply(int a, int b);
+}
+
+
+public class ReturnValues {
+    public static void main(String[] args) {
+        Multipler multipler = (a, b) -> {
+            return a * b;
+        };
+        System.out.println(multipler.multiply(10,10));
+    }
+}
+.............................................................................................
+				Code Refactoring
+..............................................................................................
+
+package com.unisys.fp.coderefactoring;
+
+@FunctionalInterface
+interface Greeter {
+    void sayHello();
+}
+
+//parameters
+@FunctionalInterface
+interface SetValue {
+    void setValue(int a);
+}
+
+//returnvalue
+@FunctionalInterface
+interface Add {
+    int add(int a, int b);
+}
+
+
+public class LambdaCodeRefactoring {
+    public static void main(String[] args) {
+        Greeter greeter = null;
+        greeter = () -> {
+            System.out.println("Hello");
+        };
+        greeter.sayHello();
+        //Rule if function body has only one line of code, we can remove {}
+        greeter = () -> System.out.println("Hello");
+        greeter.sayHello();
+        SetValue value = null;
+        value = (a) -> {
+            System.out.println(a);
+        };
+        value.setValue(10);
+        //Rule : if function takes only one arg, you can remove ()
+        value = a -> System.out.println(a);
+        value.setValue(100);
+        //Return value
+        Add adder = null;
+        adder = (a, b) -> {
+            return a + b;
+        };
+        System.out.println(adder.add(1, 2));
+        //Rule : if function has only return statement we can remove {} and return statement
+        adder = (a, b) -> a + b;
+        System.out.println(adder.add(1, 2));
+
+    }
+}
+.............................................................................................
+				 Higher Order Function
+.............................................................................................
+-Functions are first class citizen.
+
+First class Citizen: (special):
+
+- functions are passed around .(in,out)
+
+This means the language supports passing functions as arguments to other functions, returning them as the values from other functions, and assigning them to variables or storing them in data structures
+
+functions are literals , means values like int,double,string
+
+  int  a =10;(literal)
+
+  val myjob = fun doStuff(){}
+ 
+Java 8 functions are first class -  which means that they can be storedd in variables and ds,passed as arg to and return from other functions.
+
+
+Higer order function:
+
+First-class functions are a necessity for the functional programming style, in which the use of higher-order functions is a standard practice. 
+
+
+In mathematics and computer science, a higher-order function is a function that does at least one of the following:
+
+->takes one or more functions as arguments,
+->returns a function as its result.
+
+Can i say this fun is Higher order fun?
+
+Object map(){
+
+}
+
+Ans: No because it does not follow the thumb rule of higher order function.
+
+Since Java static typed language, we need to tell type of "function" itself
+
+Object  map(FunctionType myvar){
+
+}
+
+
+Object  map(FunctionalInterface myvar){
+
+}
+
+int a =10;
+     
+a=variable
+int=type - Interface-FunctionalInterface
+10=value -function as value   
+
+Note: Function Type itself is Object only behind the scnene.
+
+.............................................................................................
+
+package com.unisys.fp.hof;
+
+
+@FunctionalInterface
+interface OrderProcessor {
+    void processOrder(int id, double value);
+}
+//Function(methods) Which takes another function as parameter
+
+//Success
+@FunctionalInterface
+interface Resolve {
+    void resolve(Object response);
+}
+
+//Failure
+@FunctionalInterface
+interface Reject {
+    void reject(Throwable response);
+}
+
+class OrderService {
+    //    void process(int id, double value) {
+//        System.out.println("id " + id + " Value " + value);
+//    }
+    //Higher order Function
+    void process(OrderProcessor orderProcessor) {
+        //invoke the function
+        orderProcessor.processOrder(1, 10.78);
+    }
+}
+
+//passing multiple functions as parameter
+class LoginService {
+    //Higher order function
+    public void auth(String userName, String password, Resolve success, Reject failure) {
+        if (userName.equals("admin") && password.equals("admin")) {
+            success.resolve("Login Success");
+        } else {
+            failure.reject(new RuntimeException("Login Failed"));
+        }
+    }
+}
+
+
+public class HigherOrderFunctions {
+    public static void main(String[] args) {
+        OrderService orderService = new OrderService();
+        //orderService.process(1, 90.89);
+        //passing function as parameter with variables
+        OrderProcessor orderProcessor = (id, value) -> {
+            System.out.println("id " + id + " Value " + value);
+        };
+        orderService.process(orderProcessor);
+        //inline pattern
+        orderService.process((((id, value) -> {
+            System.out.println("id " + id + " Value " + value);
+        })));
+        orderService.process(((id, value) -> System.out.println("id " + id + " Value " + value)));
+        //Login Service
+        LoginService loginService = new LoginService();
+        loginService.auth("admin", "admin", response -> System.out.println(response), err -> System.out.println(err));
+        loginService.auth("xxx", "yyy", response -> System.out.println(response), err -> System.out.println(err));
+
+    }
+}
+..............................................................................................
+
+
+			    Callback Style :Complex Example
+
+How to pass multiple function as parameter and how invoke function based on some biz logic?
+
+
+Note : Object oriented vs Functional  programming with respect to data return.
+
+OO returns data to the caller  like below
+ -using return statement
+ -using data type
+
+public String auth() {
+  ..biz logic 
+
+  return "result";
+  
+}
+
+//caller
+String res=auth()
+
+functional returns data to the caller  like below
+
+ -No return statement
+ -using void  data type
+ -Using callbacks
+
+public void auth(Func1 var,Func2 var) {
+     
+      var.resolve("sucess")
+  
+}
+auth(res->{},err->{})
+
+//Success
+@FunctionalInterface
+interface Resolve {
+    void resolve(String response);
+}
+
+//Failure
+@FunctionalInterface
+interface Reject {
+    void reject(Throwable response);
+}
+
+//passing multiple functions as parameter
+class LoginService {
+    //Higher order function
+    public void auth(String userName, String password, Resolve success, Reject failure) {
+        if (userName.equals("admin") && password.equals("admin")) {
+            success.resolve("Login Success"); // return Type is String
+        } else {
+            failure.reject(new RuntimeException("Login Failed")); //  return Type is Throwable
+        }
+    }
+//
+//    public String auth_(String userName, String password, Resolve success, Reject failure) {
+//        if (userName.equals("admin") && password.equals("admin")) {
+//            return "Login success";
+//        } else {
+//           //  return Type is Throwable
+//        }
+//        return  throw new RuntimeException("Login Failed");
+//    }
+}
+    //Login Service
+        LoginService loginService = new LoginService();
+        loginService.auth("admin", "admin", response -> System.out.println(response), err -> System.out.println(err));
+        loginService.auth("xxx", "yyy", response -> System.out.println(response), err -> System.out.println(err));
+..........................................................................................
+				Functional Compostion - Object Oriented Compositon
+............................................................................................
+
+Object oriented Compostion:
+
+How to chain methods?
+  The out put of one method will be input to another method.
+
+JDBC Work Flow:
+
+Connection con = DriverManger.getConnection("connection")
+Statement st = con.createStatement();
+ResultSet res = st.executeQuery(query)
+process res.
+
+..............................................................................................
+				Common Functional Interfaces
+.............................................................................................	
+
+How to reduce functional interfaces itself?
+
+if you want to implement lambda, you need functional interface.
+package com.unisys.fp.builtininterfaces;
+
+import java.util.function.Consumer;
+import java.util.function.*;
+
+public class BuiltInInterfaces {
+    public static void main(String[] args) {
+//        Runnable runnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                System.out.println(Thread.currentThread().getName());
+//            }
+//        };
+        Runnable runnable = () -> System.out.println(Thread.currentThread().getName());
+        Thread thread = new Thread(runnable);
+        thread.start();
+        thread = new Thread(() -> System.out.println(Thread.currentThread().getName()));
+        thread.start();
+        //Supplier
+        Supplier<String> supplier = null;
+        supplier = () -> "Hello";
+        System.out.println(supplier.get());
+        Consumer<String> consumer = name -> System.out.println(name);
+        consumer.accept("Subramanian");
+        //return only int
+        IntSupplier intSupplier = () -> 100;
+        System.out.println(intSupplier.getAsInt());
+
+        Predicate<Integer> predicate = number -> number > 10;
+        System.out.println(predicate.test(100));
+        System.out.println(predicate.test(1));
+
+        Function<String, String> function = input -> input;
+        System.out.println(function.apply("Hello"));
+
+        //Bi -two
+        BiPredicate<Integer, Integer> biPredicate = (a, b) -> a > b;
+        System.out.println(biPredicate.test(10,20));
+
+    }
+
+
+}
+..............................................................................................
+
+.............................................................................................
+				  Functional Composition
+............................................................................................
+
+Function composition looks object composition in java.
+
+What is Function Composition?
+	Functional COmposition is a technique to coimbine multiple functions into a single function which uses combined functionality.
+       Built in java functional interfaces provides an ability to chain the functions
+
+
+Combine two function and get one function.
+
+package com.unisys.fp.builtininterfaces;
+
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+public class FunctionComposition {
+    public static void main(String[] args) {
+        Predicate<String> startsWith = text -> text.startsWith("A");
+        Predicate<String> endsWith = text -> text.endsWith("x");
+        //create new function by combining two functions
+        //Predicate<String> startsWithAndEndsWith = text -> startsWith.test(text) && endsWith.test(text);
+        Predicate<String> startsWithAndEndsWith = startsWith.and(endsWith);
+        boolean result = startsWithAndEndsWith.test("A hardworking person must relax");
+        if (result) {
+            System.out.println("Text Starts With A and Ends with e");
+        } else {
+            System.out.println("No Match found");
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        Function<Integer, Integer> multiplyByTwo = value -> value * 2;
+        Function<Integer, Integer> addByThree = value -> value + 3;
+
+        //combine two function create new Function
+        //compose execute the methods right to left
+        Function<Integer, Integer> addThenMultiply = multiplyByTwo.compose(addByThree);
+        System.out.println(addThenMultiply.apply(10));
+
+        //andThen execute the methods left to right
+        Function<Integer, Integer> multiplyAndAdd = multiplyByTwo.andThen(addByThree);
+        System.out.println(multiplyAndAdd.apply(10));
+
+
+    }
+}
+.............................................................................................
+					MethodReferences
+..............................................................................................
+					Method References
+
+->It is technique to reduce lot of lambda code itself.
+
+method references:
+  ::
+
+Types of method refences:
+
+1.instance method as reference 
+     - this::methodName
+2.static method as reference
+    - ClassName::methodName
+3.constructor as reference.
+    new::constructor
+
+Simple Method Reference:
+
+
+package com.unisys.fp.methodreferences;
+
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+
+//
+@FunctionalInterface
+interface InventoryProcessor {
+    String process(boolean isStockAvailable);
+}
+
+@FunctionalInterface
+interface Greeter {
+    Hello sayHello(String message);
+}
+
+class Hello {
+    private String message;
+
+    public Hello() {
+    }
+
+    public Hello(String message) {
+        this.message = message;
+        System.out.println(this.message);
+    }
+
+    public String getMessage() {
+        return message;
+    }
+}
+
+class OrderService {
+    public boolean isStockAvailable() {
+        return true;
+    }
+}
+
+class InventoryService {
+    //Higher Order function
+    public void updateInventor(InventoryProcessor processor) {
+        System.out.println(processor.process(true));
+    }
+}
+
+class Calculator {
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    public int subtract(int a, int b) {
+        return a - b;
+    }
+}
+
+class MicroTask {
+    //static method
+    public static void processV2() {
+        System.out.println(Thread.currentThread().getName());
+    }
+
+    //instance method
+    public void process() {
+        System.out.println(Thread.currentThread().getName());
+    }
+}
+
+class Task {
+
+    //thread logic
+    private void process() {
+        //thread logic goes here
+        System.out.println(Thread.currentThread().getName());
+    }
+
+    void startTask() {
+        Thread thread = null;
+        //Thread using Anonymous pattern
+        thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getName());
+            }
+        });
+        thread.start();
+        //Lambda syntax
+        thread = new Thread(() -> System.out.println(Thread.currentThread().getName()));
+        thread.start();
+        //Runnable logic into another method : using lambda
+        thread = new Thread(() -> this.process());
+        thread.start();
+        //Runnable logic into separate class with instance method: using lambda
+        MicroTask microTask = new MicroTask();
+        thread = new Thread(() -> microTask.process());
+        thread.start();
+        //Runnable logic into separate class with static method: using lambda
+        thread = new Thread(() -> MicroTask.processV2());
+        thread.start();
+        //Runnable logic into another method : using method Reference
+        thread = new Thread(this::process);
+        thread.start();
+        //Runnable logic into separate class with instance method: using MethodReference
+        thread = new Thread(microTask::process);
+        thread.start();
+        //Runnable logic into separate class with static method: using Method Reference
+        thread = new Thread(MicroTask::processV2);
+        thread.start();
+
+    }
+}
+
+public class MethodReferences {
+
+    private static String process(boolean res) {
+        return "Inventory processed" + res;
+    }
+
+    public static void main(String[] args) {
+        Task task = new Task();
+        //task.startTask();
+        //
+        OrderService orderService = new OrderService();
+        //Buit in Supplier interface
+        Supplier<Boolean> orderSupplier = null;
+        //Supplier with lambda
+        orderSupplier = () -> orderService.isStockAvailable();
+        System.out.println(orderSupplier.get());
+        //Supplier with Method Reference
+        orderSupplier = orderService::isStockAvailable;
+        System.out.println(orderSupplier.get());
+        InventoryService inventoryService = new InventoryService();
+        //hof with lambda
+//        inventoryService.updateInventor(res -> {
+//            return "Inventory processed" + res;
+//        });
+        inventoryService.updateInventor(res -> "Inventory processed" + res);
+        //hof with Hof
+        inventoryService.updateInventor(MethodReferences::process);
+
+        //
+        //BiFunction<Integer, Integer, Integer> adder = (a, b) -> Calculator.add(a, b);
+        BiFunction<Integer, Integer, Integer> adder = Calculator::add;
+        System.out.println(adder.apply(10, 10));
+
+        Calculator calculator = new Calculator();
+        //lambda with input and output
+        BiFunction<Integer, Integer, Integer> subtracter = (a, b) -> calculator.subtract(a, b);
+        System.out.println(subtracter.apply(10, 2));
+        BiFunction<Integer, Integer, Integer> subtracterMethodRef = calculator::subtract;
+        System.out.println(subtracterMethodRef.apply(10, 2));
+
+        //object creation using :: method reference
+//        Greeter greeter = message -> new Hello(message);
+        Greeter greeter = Hello::new;
+        System.out.println(greeter.sayHello("Hello"));
+
+    }
+}
+..............................................................................................
+				Java 8 functional Programming Implementation
+
+Java 8 provides an a mini framework for showing the power of functional implementations via "Java Streams" , functional Collections.
+
+package com.unisys.fp.collections;
+
+import java.util.List;
+
+public class Streams {
+    public static void main(String[] args) {
+        List<Integer> list = List.of(1, 2, 3, 4, 5, 6);
+        list.forEach(i -> System.out.println(i));
+        list.forEach(System.out::println);
+        System.out.println("Filtered data");
+//        list.stream().filter(e -> e > 3).forEach(System.out::println);
+        list.stream().filter(Streams::isGreater).forEach(System.out::println);
+
+    }
+    private static boolean isGreater(Integer e) {
+        return e > 3;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
