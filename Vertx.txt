@@ -1,0 +1,831 @@
+					Vertx
+..............................................................................................File Descriptor:
+
+-It is data structure(array) which is available in the kernal- having key -value pairs 
+ It stores the information about io devices.
+
+-It is created for every process - Per Process 
+
+File Descriptor maps io devices with The application Progams
+
+lets say i have java program runs on jvm.
+
+When ever jvm starts , file descriptor is created and kept for io interaction.
+
+File Descriptor contains two fields
+ ------------------------------------
+ File Descriptor Entries           File Pointer Reference
+     0                                 STDIN    -KEYBOARD Binding
+     1                                 STDOUT   -Monitor Binding
+     2                                 STDERROR -Monitor Binding
+     3                                  ?
+     4                                  ?
+
+
+The first three enteries are created when process bootstraps.
+
+Lets take an eg : i want to read data from the disk file?.
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class CopyBytes {
+    public static void main(String[] args) throws IOException {
+
+        FileInputStream in = null;
+        FileOutputStream out = null;
+
+        try {
+            in = new FileInputStream("xanadu.txt");
+            out = new FileOutputStream("outagain.txt");
+            int c;
+
+            while ((c = in.read()) != -1) {
+                out.write(c);
+            }
+        } finally {
+            if (in != null) {
+                in.close();
+            }
+            if (out != null) {
+                out.close();
+            }
+        }
+    }
+}
+
+In this program, when application calls "in.read()"
+    ----------------->JVM invokes system call(api written in c language)------|os keneral
+                      -->It will add an entry into file descriptor table and binds the disk file location
+ 
+  
+File Descriptor contains two fields
+ ------------------------------------
+ File Descriptor Entries           File Pointer Reference
+     0                                 STDIN    -KEYBOARD Binding
+     1                                 STDOUT   -Monitor Binding
+     2                                 STDERROR -Monitor Binding
+     3                                 HD------------->bINDING HARDDRIVE
+     4                                 NETWORK -----|NEC BINDING
+.............................................................................................
+				Multi threading and IO Models
+............................................................................................
+
+Every modern process(JVM) is multi threaded.
+Each thread can be created and assigned for an io operations : concurrent io /parrell io.
+Every thread is blocked/freezed until data is ready from io channels.
+
+Based this idea only web servers were designed : Multi threading and io.
+
+In web , there is programming model request(read)-response(write)(Network IO) model
+
+Client--------------------IO Channel------------------------Server
+
+Server Design:
+..............
+
+Every Web server is multi threaded -tomcat.
+
+When ever a new request(io request) is arrived, Tomcat(Server) creates/assigns "a thread"
+............................................................................................
+C10K Problem:
+.............
+The C10k problem is the problem of optimizing network sockets to handle a large number of clients at the same time.
+
+ 1000 REQ = 1000 Threads - This is Problem
+
+ More Req ==Minimum number of Threads
+
+Why? What is problem of Threading:
+
+if i create thread
+ -memory allocation 
+ -managing life cycle of threads
+
+if thread is created , requests kernal for data, if the data not ready.
+
+if data is not ready during that time thread is waiting(blocking)/blocked 
+lets say , thread has created it is waiting for 1ms for data. this 1ms during that thread is useless, can be used by any one.
+
+The cpu, will pause the unused thread for 1ms, if data is ready again it will activate-This process is called context switch.
+.............................................................................................
+				How to build efficient network io apps
+.............................................................................................
+
+Before 2000, all programming languages used blocking io apis by default,even today all programming langugages blocking io apis.
+
+C10K problem and its solution:
+
+Every os has blocking api only.
+
+After 2000, First,Linux introduced a new api called non blocking io api - "select"
+
+1st Implementation:
+
+ select  + read 
+
+select will add entry , returns control back to process
+read will be fired to read data once it is ready in the keneral
+............................................................................................
+
+2nd Implementation:
+
+Poll:
+.....
+
+Poll is similar to Select -nonblocking,but data is reterived not by calling extra method(read).
+Polling is nothing pushing- Data is pushed from the kernal to Application process
+
+select is Pull based - Data is pulled from the kernal.
+
+Even driven Programming , Event driven io. when ever data is ready, poll will start sending signal(event) to application Process, where application process listens for events, once event is given which starts processing that event.
+
+...........................................................................................
+
+3rd Implmentation:
+
+epoll:
+
+->epoll is a framework extended from poll.
+->monitoring multiple file descriptors to see if I/O is possible on any of   them. 
+
+
+Epoll loop:
+           for (;;) {
+               nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
+               if (nfds == -1) {
+                   perror("epoll_wait");
+                   exit(EXIT_FAILURE);
+               }
+
+               for (n = 0; n < nfds; ++n) {
+                   if (events[n].data.fd == listen_sock) {
+                       conn_sock = accept(listen_sock,
+                                          (struct sockaddr *) &addr, &addrlen);
+                       if (conn_sock == -1) {
+                           perror("accept");
+                           exit(EXIT_FAILURE);
+                       }
+                       setnonblocking(conn_sock);
+                       ev.events = EPOLLIN | EPOLLET;
+                       ev.data.fd = conn_sock;
+                       if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock,
+                                   &ev) == -1) {
+                           perror("epoll_ctl: conn_sock");
+                           exit(EXIT_FAILURE);
+                       }
+                   } else {
+                       do_use_fd(events[n].data.fd);
+                   }
+               }
+
+
+Epoll runs a loop indefintly for io operations(network io), when ever data is ready which emits event to the process.
+
+When operating systems supports non blocking infrastructure, language and runtimes should support that
+The first non blocking implemention was nginx web server - the first c10k solution
+
+flollwed by nginx "2008" -  Node.js- Non blocking soultion.
+..............................................................................................
+.............................................................................................
+				Vertx Inspired from Node.js
+............................................................................................
+
+In node there is only one event loop thread, who process events from kernal.
+
+Vertx added more threads to process events.
+
+Vertx implements c10K problem solution on JVM
+   -Limited threads but max concurrency
+   -Non blocking io apis 
+
+Vertx by default maintains threads based Number of cup cores
+
+i have 12 core, each core -2 threads
+ 
+ 12*2 = 24 threads
+
+                   24 threads now can handle XXXX no  Requests
+...........................................................................................
+...........................................................................................
+			   Vertx Core Concepts
+		Vertx helps to build 100% scalable non blocking + reactive applications
+..............................................................................................
+
+Reactive - Data Streaming
+Nonblocking/Async -  Thread Management and processing events
+..............................................................................................
+
+Lets Code:
+
+1.Vertx Instance -Vertx Engine
+2.Verticals 
+3.Event Bus
+..............................................&&&&&&&&&&&&&&&&&.............................
+
+How to setup vertx project
+
+vertx supports
+
+1.maven
+2.gradle
+
+project can be simple 
+
+1.normal java project
+2.standard mvn project
+3.vertx project from https://start.vertx.io/
+
+
+How to run Vertx Project?
+
+Vertx application will have entry Point , configured in general pom.xml
+
+<main.verticle>com.unisys.MainVerticle</main.verticle>
+<launcher.class>io.vertx.core.Launcher</launcher.class>
+
+
+mvnw clean compile exec:java
+
+=mvnw clean package -  jar file - fat jar /regular
+java -jar target/vertxstarter-1.0.0-SNAPSHOT-fat.jar
+.............................................................................................
+					Vertx Engine/Runtime
+.............................................................................................
+
+Vertx Engine is a java class, represented as interface in the vertx.io.core package.
+
+Role of Vertx Engine:
+
+1.To run vertx app
+2.To help to access all non blocking infrastructure
+  ->HTTP Webserver
+  ->TCP Servers
+  ->UDP Servers
+  ->FS ACCESS
+  ->Object interactions via "Event Bus".
+  ->CPU Timer access
+  ->App deployment and undeployment
+  ->Create Shared data.
+
+Vertx Application Components:
+............................
+
+In spring Framework apps are collection of objects called "beans".
+In Vertx apps are collection of objects called "Verticles".
+
+What is Verticle?
+
+Verticle:
+  -It is java object
+  -Where we write all non blocking application logics.
+  -It can be deployed and undeployed on vertx instance (engine).
+  -It is based on design pattern called "Actor-like Model" - based on akka frameworks
+  -Verticles are bound to "Event loop " , are processed by event loop threads.
+
+Deployment means "the action of bringing resources into effective action." - allocating resource for use.
+
+Deployment Resources for a Verticle:
+
+1.Assign/bound a event loop thread to a verticle.
+
+..............................................................................................
+How to vertx Program?
+
+Ways 
+
+1. via main method
+package com.unisys;
+
+import io.vertx.core.Vertx;
+
+public class HelloWorldVertx {
+  public static void main(String[] args) {
+    //Vertx Engine Creation
+    Vertx vertx = Vertx.vertx();
+    System.out.println(vertx);
+    System.out.println(Thread.currentThread().getName());
+    //create simple non blocking web server
+    vertx.createHttpServer().requestHandler(req -> {
+      System.out.println(Thread.currentThread().getName());
+      req.response().end("Hello Vertx");
+    }).listen(8080);
+
+  }
+}
+
+2.via lanucher
+<main.verticle>com.unisys.MainVerticle</main.verticle>
+<launcher.class>io.vertx.core.Launcher</launcher.class>
+
+io.vertx.core.Launcher;
+
+A main() class that can be used to create Vert.x instance and deploy a verticle, or run a bare Vert.x instance.
+
+This class is used by the vertx command line utility to deploy verticles from the command line. It is extensible as "commands" can be added using the CommandFactory SPI.
+
+mvn compile exec:java
+
+
+3.via vertx command line utility.
+  -vertx 4 has removed external command line tools.
+
+vertx
+
+4.via java jar model
+
+-fat jar / uber jar :
+  -embeded application
+ appcode + server code
+
+mvn clean package
+ 
+java -jar target/starter-vertx-1.0.0-SNAPSHOT-fat.jar
+........................................................................................................
+
+Vertx-Modules:
+core
+web
+reactive
+microservices
+data
+messaging
+.......................................................................................................		vertx-core:
+
+-Verticles
+-Event loop Threads
+-Callback based programming
+		
+
+Verticle:
+  -It is java object
+  -It can be deployed and undeployed on vertx instance (engine).
+  -It is based on design pattern called "Actor-like Model" - based on akka frameworks
+  -Verticles are bound to "Event loop" , are processed by event loop threads.
+
+Verticle is interface which provides life cycle methods 
+  -init
+  -start - called when verticle during deployment
+  -stop  - called when verticles during undeployment
+..............................................................................................
+
+Vertx Objective is to build non blocking io apps -  networks,filesystem,data base.
+
+Vertx Programming styles:
+
+1.Without Verticle
+
+public class HelloWorldVertx {
+  public static void main(String[] args) {
+    //Vertx Engine Creation
+    Vertx vertx = Vertx.vertx();
+    System.out.println(vertx);
+    System.out.println(Thread.currentThread().getName());
+    //create simple non blocking web server
+    vertx.createHttpServer().requestHandler(req -> {
+      System.out.println(Thread.currentThread().getName());
+      req.response().end("Hello Vertx");
+    }).listen(8080);
+
+  }
+}
+
+
+2.With Verticle
+  Use of verticles with Vert.x is entirely optional, but if you use them they provide an  "actor-like deployment and concurrency model", out of the box.
+
+verticle is  class , if you want to create your own verticle, you need to inherit.
+
+import io.vertx.core.AbstractVerticle;
+
+public class GreetingVerticle extends AbstractVerticle {
+  
+}
+
+Verticle is interface which provides life cycle methods 
+  -init
+  -start - called when verticle during deployment
+  -stop  - called when verticles during undeployment
+
+
+................................................................................
+
+Deploying Verticles
+
+Via main Method:
+import io.vertx.core.Vertx;
+
+public class GreeterDeployerMain {
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+   //deploy the verticle on vertx engine
+//    vertx.deployVerticle(new GreetingVerticle());
+    vertx.deployVerticle(GreetingVerticle.class.getName());
+    vertx.deployVerticle("com.unisys.GreetVerticle");
+    vertx.close();
+  }
+}
+
+via Verticle itself:
+
+One Verticle can deploy other Verticle.
+
+inside verticle vertx reference is available by default.
+
+Vertx vert=Vertx.vertx(); you dont need to write this code
+
+package com.unisys;
+
+import io.vertx.core.AbstractVerticle;
+
+public class GreeterDeployer extends AbstractVerticle {
+  @Override
+  public void start() throws Exception {
+    super.start();
+    vertx.deployVerticle(new GreetingVerticle());
+  }
+}
+..............................................................................................
+
+Via Runner Class;
+.................
+package com.unisys;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.example.util.Runner;
+
+public class GreeterDeployer extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(GreeterDeployer.class);
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    vertx.deployVerticle(new GreetingVerticle());
+  }
+}
+.............................................................................................
+				Vertx Core Concepts
+............................................................................................
+
+.............................................................................................
+				Non Blocking Applications
+..............................................................................................
+
+Patterns for writting non blockings apps
+
+1.callback style -  traditional
+2.reactive style -  streaming
+
+Non blocking apis
+1.timer
+2.http
+3.fs
+
+Callback Style
+
+1.Future
+2.Promise
+
+Future:
+io.vertx.core.Future
+
+Vertx uses futures to reprsent "Asynchronous" Results
+
+Future is like transport object to transport data between caller and callee in async manner.
+
+ Caller----Future--------Callee
+
+What type of data Future can carry.
+
+ - Success---- |
+		--- >Future
+ - Failure---- |
+
+AsyncResult<T> :
+   Object which has either success data or failure data.
+   Used in caller side to capture data which was sent by Callee
+..............................................................................................
+
+Use case : How to create Future,encasulate success,failure , how to listen for data?
+
+package com.unisys.futures;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.example.util.Runner;
+
+class FutureTransferVerticle extends AbstractVerticle {
+
+  //method which returns future -  callee
+  public Future<String> sayHello() {
+//    return Future.future(new Handler<Promise<String>>() {
+//      @Override
+//      public void handle(Promise<String> stringPromise) {
+//        stringPromise.complete("Hello");
+//      }
+//    });
+    //We are returning
+    return Future.future(future -> future.complete("Hello"));
+  }
+
+  //method which throws error
+  public Future<String> createErrorMessage() {
+    return Future.future(f -> f.fail("Something went wrong!!"));
+  }
+
+  //biz logic which may send success or failure data
+  public Future<String> login(String username, String password) {
+    return Future.future(handler -> {
+      if (username.equals("admin") && password.equals("admin")) {
+        handler.complete("Login success");
+      } else {
+        handler.fail("Login Failed");
+      }
+    });
+  }
+
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    //caller
+//    createFuture().onComplete(new Handler<AsyncResult<String>>() {
+//      @Override
+//      public void handle(AsyncResult<String> asyncResult) {
+//             if(async.succ) {
+
+//             } else {}
+//      }
+//    });
+    sayHello().onComplete(asyncResult -> {
+      if (asyncResult.succeeded()) {
+        //read data
+        System.out.println(asyncResult.result());
+      } else {
+        System.out.println(asyncResult.cause().getMessage());
+      }
+    });
+    //listen for error
+    createErrorMessage().onComplete(asyncResult -> {
+      if (asyncResult.failed()) {
+        System.out.println(asyncResult.cause());
+      }
+    });
+    //listen for success or failer
+    login("admin", "admin").onComplete(asyncResult -> {
+      if (asyncResult.failed()) {
+        System.out.println(asyncResult.cause());
+      }
+      System.out.println(asyncResult.result());
+    });
+    login("xxx", "xxx").onComplete(asyncResult -> {
+      if (asyncResult.failed()) {
+        System.out.println(asyncResult.cause());
+      } else {
+        System.out.println(asyncResult.result());
+      }
+    });
+  }
+}
+
+
+public class FutureVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    System.out.println("deploying...");
+    Runner.runExample(FutureVerticle.class);
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    System.out.println("deploying...");
+
+    vertx.deployVerticle(new FutureTransferVerticle());
+  }
+}
+..............................................................................................
+				Listener Short cuts
+..............................................................................................
+
+login().onComplete() -  1
+   here handler<AsyncResult> is parameter
+login().onSuccess()
+login().onFailure()
+   here direct data -Handler<T> is parameter
+
+  login("admin", "admin")
+      .onSuccess(res -> System.out.println(res))
+      .onFailure(err -> System.out.println(err));
+    login("admin", "admin")
+      .onSuccess(System.out::println)
+      .onFailure(System.out::println);
+.............................................................................................
+				Future Object creation types
+............................................................................................
+
+
+Pattern - 1:
+
+Future.future() - factoryMethod
+ public Future<String> login(String username, String password) {
+    return Future.future(handler -> {
+      if (username.equals("admin") && password.equals("admin")) {
+        handler.complete("Login success");
+      } else {
+        handler.fail("Login Failed");
+      }
+    });
+  }
+
+Pattern - 2:
+
+Future.succeedFuture()
+Future.failedFuture()
+ 
+  public Future<String> loginV1(String username, String password) {
+    if (username.equals("admin") && password.equals("admin")) {
+      return Future.succeededFuture("Login is Successful");
+    } else {
+      return Future.failedFuture("Login failed");
+    }
+  }
+loginV1("admin", "admin")
+      .onSuccess(System.out::println)
+      .onFailure(System.out::println);
+
+
+Pattern - 3, Instead of Returning Future, Pass function as parameter - Higher Order function Pattern
+
+  public void loginV2(String userName, String password, Handler<AsyncResult<String>> aHandler) {
+    if (userName.equals("admin") && password.equals("admin")) {
+      //encapsulate data
+      aHandler.handle(Future.succeededFuture("Login is Successful"));
+    } else {
+      aHandler.handle(Future.failedFuture("Login failed"));
+    }
+  }
+
+loginV2("admin", "admin", handler -> {
+      if (handler.succeeded()) {
+        System.out.println(handler.result());
+      } else {
+        System.out.println(handler.cause());
+      }
+    });
+..............................................................................................
+				Callback Chaining
+			        Nested Callbacks
+.............................................................................................
+
+Legacy Application flow : object oriented and sync flow
+  
+dependent operations  , should happen one by one
+
+Object oriented seq work flow /Sync work flow
+
+ 1.connect db - connect()
+ 2.Query results -queryResult()
+ 3.Formate results -formateResult()
+ 4.add results into http response stream - write()
+ 5.send/flush the results to clients - send()
+
+ Connection con=DriverManager.getConnection("connectionstring");
+ QueryResult queryres=con.queryResult()
+ List<T> results = formatResult(queryres)
+ response.write(results)
+ reponse.end();
+
+...........................................................................................
+How the above task can be done in functional programming ; vertx?
+
+
+Functional sequential workflow:
+
+ Nested Callback : Callback chaining: functional style
+
+  Handler function is called as callback function
+
+"The out put of one callback is input to the another callback : nested callbacks
+
+   cb1
+     --cb2
+         -cb3
+            --cbN
+              --process the result.
+.............................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

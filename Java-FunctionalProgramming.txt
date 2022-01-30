@@ -893,7 +893,7 @@ public class FunctionComposition {
 .............................................................................................
 					MethodReferences
 ..............................................................................................
-					Method References
+				
 
 ->It is technique to reduce lot of lambda code itself.
 
