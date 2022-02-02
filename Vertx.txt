@@ -1754,27 +1754,1326 @@ public class FluentHTTPServer extends AbstractVerticle {
   }
 }
 .............................................................................................
+				  How to write Restfull webservices
+..............................................................................................
+
+Web:
+  Distributed Information system 
+
+In 1981/82 , Internet was open sourced...
+
+British scientist Tim Berners-Lee invented the World Wide Web while working at CERN in 1989,based on internet.
+
+Internet - network system
+Web -software system , helps to transfer information over internet.
+
+1991 - Web started for other biz systems.
+
+1989 -1995 - Static Web- only transfering html.
+1995-- till date - dynamic content generation tech -  cgi,j2ee,asp,php..
+
+1998- Ecommerce - How to transfer data/information among biz 
+
+Birth of Web Services:
+......................
+
+The Program which sends data /information via internet to other systems not inthe form of html.
+
+2000 -  The data interchange conference held. where many people proposed various data formats
+There were more than 30 formates proposed - xml,json,dat,txt,csv.........
+At the end "XML" Was choosen. 
+
+Web based on XML format - WebServices using XML - SOAP(protocal designed to transport xml docs over http) Web Service
+
+2005 -  SOAP based webservices started failing due to XML documents.
+
+REST Got introduced -  
+  REST Can transport data over http only.
+  REST can transport data in different formats -  JSON
+  REST modeled based on HTTP verb semantics -  GET,UPDATE,DELETE,PUT.
+
+2008 - SPA  How to build  Userfaces in the client side.
+..............................................................................................
+				Today Web Technology
+
+API : Application Programming Interface
+ entry and exit point of data transmission.
+ Unit of Computation.
+ API is implemented in many ways
+
+1.REST APIS
+2.GraphQL API
+3.RPC/RPI api
+4.MOM  api 
+
+Client Side - SPAS/Mobile Apps
 
 
+REST APIS Using Vertx:
+......................
+
+Resource:
+  The data which need to be returned.
+
+Resource identifier -  URI - "/api/customers/list" - GET 
+
+API Verbs
+ GET -  read
+ PUT  - update
+ DELETE - remove
+ POST -  Send data
 
 
+package com.unisys.nonblocking.http;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.example.util.Runner;
+
+public class SimpleHTTPAPI extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(SimpleHTTPAPI.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.createHttpServer()
+      .requestHandler(request -> {
+        //build rest api
+        if (request.uri().equals("/api/users") && request.method() == HttpMethod.GET) {
+          request.response().setStatusCode(200).end("users-GET");
+        }
+        if (request.uri().equals("/api/users") && request.method() == HttpMethod.POST) {
+          request.response().setStatusCode(200).end("users-POST");
+        }
+        if (request.uri().equals("/api/users") && request.method() == HttpMethod.PUT) {
+          request.response().setStatusCode(200).end("users-PUT");
+        }
+      })
+      .listen(3000,server -> {
+        if (server.succeeded()) {
+          System.out.println(server.result().actualPort() + " Server is running");
+        } else {
+          System.out.println(server.cause());
+        }
+      });
 
 
+  }
+}
+I WANT TO build REST End point :
 
 
+URL - resource mapping
+ /api/resource
+ 
+METHOD -  GET ,POST,PUT,DELETE....
 
 
+  public void buildREST() {
+    vertx.createHttpServer().requestHandler(request -> {
+      //URL MAPPING AND METHOD MAPPING
+      if (request.uri().equals("/api/users") && request.method() == HttpMethod.GET) {
+        request.response().setStatusCode(200).end("users-GET");
+      }
+      if (request.uri().equals("/api/users") && request.method() == HttpMethod.POST) {
+        request.response().setStatusCode(200).end("users-POST");
+      }
+      if (request.uri().equals("/api/users") && request.method() == HttpMethod.PUT) {
+        request.response().setStatusCode(200).end("users-PUT");
+      }
+    }).listen(3000, httpServerAsyncResult -> {
+      if (httpServerAsyncResult.succeeded()) {
+        System.out.println("server is running at " + httpServerAsyncResult.result().actualPort());
+      } else {
+        System.out.println("Server has failed to start");
+      }
+    });
+  }
+
+Have a look at the above, notice the drawbacks.
+
+-The developer write all method and resource mapping logic
+-There is no proper modularity in build ing apps.
+
+Soultion:
+
+Vertx provides a small framework for abstracting these things
+vertx-web
+
+Concepts:
+
+Router:
+........
+ Router is one the core concepts of vertx-web.
+ Its object which maintains zero or more Routes("url mappers")
+ Router takes an http request and finds the matching routing for that request.
+ Every route has handler which process requests and send responses.
 
 
+RoutingContext:
+   It is container object , from which you can get request and response object.
 
 
+Use case : Basic routing:
+
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+public class SimpleWebAPI extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(SimpleWebAPI.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+
+    HttpServerOptions options;
+    HttpServer server = vertx.createHttpServer();
+//    server.requestHandler(request -> {
+//      HttpServerResponse serverResponse = request.response();
+//      serverResponse.setStatusCode(200);
+//      serverResponse.putHeader("content-type", "application/json");
+//      JsonObject greet = new JsonObject().put("message", "Hello");
+//      serverResponse.end(greet.encodePrettily());
+//    });
+
+    //Router creation
+    Router router = Router.router(vertx);
+    //route
+    router.route().handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hello Vertx Web");
+      serverResponse.end(greet.encodePrettily());
+    });
+
+    server.requestHandler(router);
+    server.listen(8080);
+
+  }
+}
+...........................................................................................
+					Routers using route method
+
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+public class SimpleWebAPI extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(SimpleWebAPI.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+
+    HttpServerOptions options;
+    HttpServer server = vertx.createHttpServer();
+//    server.requestHandler(request -> {
+//      HttpServerResponse serverResponse = request.response();
+//      serverResponse.setStatusCode(200);
+//      serverResponse.putHeader("content-type", "application/json");
+//      JsonObject greet = new JsonObject().put("message", "Hello");
+//      serverResponse.end(greet.encodePrettily());
+//    });
+
+    //Router creation
+    Router router = Router.router(vertx);
+
+    //new Route
+    router.route(HttpMethod.GET, "/api/hello").handler(ctx -> {
+      System.out.println("hello");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hello");
+      serverResponse.end(greet.encodePrettily());
+    });
+    router.route(HttpMethod.GET, "/api/hai").handler(ctx -> {
+      System.out.println("hai");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai");
+      serverResponse.end(greet.encodePrettily());
+    });
+    //route : wild card pattern  , any route
+    router.route().handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Home");
+      serverResponse.end(greet.encodePrettily());
+    });
+    server.requestHandler(router);
+    server.listen(8080);
+
+  }
+}
+............................................................................................
+				Path Parameters
+............................................................................................
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+public class RouterVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(RouterVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    HttpServer server = vertx.createHttpServer();
+    //Router creation
+    Router router = Router.router(vertx);
 
 
+    //new Route
+    router.get("/api/hello").handler(ctx -> {
+      System.out.println("hello");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hello");
+      serverResponse.end(greet.encodePrettily());
+    });
+    router.get("/api/hai").handler(ctx -> {
+      System.out.println("hai");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai");
+      serverResponse.end(greet.encodePrettily());
+    });
+    router.post("/api/hai").handler(ctx -> {
+      System.out.println("hai");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai -POST");
+      serverResponse.end(greet.encodePrettily());
+    });
+//path Parameters: dynamic url  /api/hello/subramanian | Ram | John
+    router.get("/api/hello/:whom").handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      //using request object extract path parameters
+      String whom = ctx.pathParam("whom");
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "greet " + whom);
+      serverResponse.end(greet.encodePrettily());
+    });
+
+    //route : wild card pattern  , any route
+    router.route().handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Home");
+      serverResponse.end(greet.encodePrettily());
+    });
+    server.requestHandler(router);
+    server.listen(8080);
+
+  }
+}
+.............................................................................................
+				How to read Payload
+.............................................................................................
 
 
+How to read payload?
+
+ router.post("/api/greet").handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      //reading data:
+      JsonObject payload = ctx.getBodyAsJson();
+      System.out.println(payload.encodePrettily());
+
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai -POST");
+      serverResponse.end(greet.encodePrettily());
+    });
+
+when you run, you will get error like below?
+
+Feb 02, 2022 4:23:37 PM io.vertx.ext.web.RoutingContext
+WARNING: BodyHandler in not enabled on this route: RoutingContext.getBodyAsJson() in always be NULL
+Feb 02, 2022 4:23:37 PM io.vertx.ext.web.RoutingContext
+SEVERE: Unhandled exception in router
+java.lang.NullPointerException
+	at com.unisys.nonblocking.http.web.RouterVerticle.lambda$start$2(RouterVerticle.java:45)
+
+From the client side we send "json" , json is simple text format, but vertx deals Object
+
+POST /api/greet
+{
+  "message" : "How are you?"
+
+}
+
+Solution:
+    //which enables parsers -  json-  JsonObject
+
+router.route().handler(BodyHandler.create());
 
 
+router.post("/api/greet").handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      //reading data:
+      JsonObject payload = ctx.getBodyAsJson();
+      System.out.println(payload.encodePrettily());
 
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai -POST");
+      serverResponse.end(greet.encodePrettily());
+    });
+..............................................................................................
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
+
+public class RouterVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(RouterVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    HttpServer server = vertx.createHttpServer();
+    //Router creation
+    Router router = Router.router(vertx);
+    //which enables parsers -  json-  JsonObject
+    router.route().handler(BodyHandler.create());
+
+    //new Route
+    router.get("/api/hello").handler(ctx -> {
+      System.out.println("hello");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hello");
+      serverResponse.end(greet.encodePrettily());
+    });
+    router.get("/api/hai").handler(ctx -> {
+      System.out.println("hai");
+      HttpServerResponse serverResponse = ctx.response();
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai");
+      serverResponse.end(greet.encodePrettily());
+    });
+    router.post("/api/greet").handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      //reading data:
+      JsonObject payload = ctx.getBodyAsJson();
+      System.out.println(payload.encodePrettily());
+
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "Hai -POST");
+      serverResponse.end(greet.encodePrettily());
+    });
+//path Parameters: dynamic url  /api/hello/subramanian | Ram | John
+    router.get("/api/hello/:whom").handler(ctx -> {
+      HttpServerResponse serverResponse = ctx.response();
+      //using request object extract path parameters
+      String whom = ctx.pathParam("whom");
+      serverResponse.setStatusCode(200);
+      serverResponse.putHeader("content-type", "application/json");
+      JsonObject greet = new JsonObject().put("message", "greet " + whom);
+      serverResponse.end(greet.encodePrettily());
+    });
+
+
+    server.requestHandler(router);
+    server.listen(8080);
+
+  }
+}
+.............................................................................................
+				 Query Parameters
+
+.............................................................................................
+
+URL :
+http://localhost:8080/api/good?message=eve
+
+   router.get("/api/good").handler(ctx -> {
+      List<String> message = ctx.queryParam("message");
+      System.out.println(message.size());
+      ctx.response().end("good " + message.get(0));
+    });
+
+..............................................................................................
+				Resource Oriented Routers
+
+
+Domain Models:
+
+/api/users
+   list
+   save
+   update
+   remove
+
+/api/products
+  list
+  save
+  update
+  
+
+What if i have more resources and more routes?
+
+ProductRouter - /api/products
+UserRouter -  /api/users
+Payment Router - /api/payment
+
+server.requestHandler(?);
+
+SubRouters and Main routers
+
+- you can have more subrouters - prodct,user,payment..
+-  you can have only one main /app router -  approuter
+- that app router only can passed to requestHandler(appRouter).
+
+How to bind /connect app router with subrouter
+
+Router has method called "mountSubRouter"
+
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+
+public class ResourceRouters extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ResourceRouters.class);
+  }
+
+  private static void list(RoutingContext ctx) {
+    ctx.response().end("Users");
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    //SubRouters
+    Router userRouter = Router.router(vertx);
+    Router productsRouter = Router.router(vertx);
+    Router customerRouter = Router.router(vertx);
+    //Main/app router
+    Router appRouter = Router.router(vertx);
+    //initialize global Parser
+    appRouter.route().handler(BodyHandler.create());
+    userRouter.get("/list").handler(UserRouter::list);
+    userRouter.post("/create").handler(UserRouter::create);
+    productsRouter.get("/list").handler(ProductsRouter::list);
+    customerRouter.get("/list").handler(CustomersRouter::list);
+
+    //Mount/Bind appRouter with subRouters
+    appRouter.mountSubRouter("/api/users", userRouter);
+    appRouter.mountSubRouter("/api/products", productsRouter);
+    appRouter.mountSubRouter("/api/customers", customerRouter);
+
+    vertx.createHttpServer().requestHandler(appRouter).listen(8080, handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Webserver is running at " + handler.result().actualPort());
+      }
+    });
+
+
+  }
+
+  //inner class
+  private static class UserRouter {
+    public static void create(RoutingContext ctx) {
+      JsonObject user = ctx.getBodyAsJson();
+      System.out.println(user.encodePrettily());
+      ctx.response().setStatusCode(201).end("User saved");
+    }
+
+    public static void list(RoutingContext ctx) {
+      ctx.response().setStatusCode(200).end("User list");
+    }
+  }
+
+  private static class ProductsRouter {
+    public static void create(RoutingContext ctx) {
+      JsonObject user = ctx.getBodyAsJson();
+      System.out.println(user.encodePrettily());
+      ctx.response().setStatusCode(201).end("Product saved");
+    }
+
+    public static void list(RoutingContext ctx) {
+      ctx.response().setStatusCode(200).end("Product list");
+    }
+  }
+
+  private static class CustomersRouter {
+    public static void create(RoutingContext ctx) {
+      JsonObject user = ctx.getBodyAsJson();
+      System.out.println(user.encodePrettily());
+      ctx.response().setStatusCode(201).end("Customers saved");
+    }
+
+    public static void list(RoutingContext ctx) {
+      ctx.response().setStatusCode(200).end("Customers list");
+    }
+  }
+}
+............................................................................................
+				Exception Handling
+.............................................................................................
+
+If something went wrong how to handle exception and how to send error messages to clients.
+
+router.failureHandler(fRctx->{
+  //extract error information
+  send error data to client
+})
+
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+public class WebExceptionVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(WebExceptionVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router userRouter = Router.router(vertx);
+    Router appRouter = Router.router(vertx);
+    appRouter.mountSubRouter("/api/users", userRouter);
+
+    userRouter.get("/list/:name").handler(ctx -> {
+      String name = ctx.pathParam("name");
+      if (name.equals("admin")) {
+        ctx.response().setStatusCode(200).end("You are valid User");
+      } else {
+        throw new RuntimeException("You are Invalid User!!!!");
+      }
+    }).failureHandler(fctx -> {
+      int statuCode = fctx.statusCode();
+      String message = fctx.failure().getMessage();
+      JsonObject jsonObject = new JsonObject().put("code", 100).put("message", message);
+      fctx.response().setStatusCode(statuCode).end(jsonObject.encodePrettily());
+    });
+
+    vertx.createHttpServer().requestHandler(appRouter).listen(8080, handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Webserver is running at " + handler.result().actualPort());
+      }
+    });
+  }
+}
+
+.............................................................................................
+
+Handlers Type:
+
+router.handler() -  async request handler
+router.failureHandler() - async exception/error handler.
+
+Global Handlers:
+BodyHandler - converts "json string" into JsonObject
+TimeoutHandler - to set Request timeout for given url or global
+blockingHandler - For writing blocking code.
+
+.............................................................................................
+				Content Negoation
+............................................................................................
+Rest api can accept and return multiple data formats based on Request from the client.
+
+One Single Rest api can serve data in multiple formats such as  xml,html,pdf,json,text...
+
+package com.unisys.nonblocking.http.web;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.ResponseContentTypeHandler;
+
+public class ContentNegoation extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ContentNegoation.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router userRouter = Router.router(vertx);
+    Router appRouter = Router.router(vertx);
+
+    //adding header automatically into response
+    appRouter.route().handler(ResponseContentTypeHandler.create());
+
+    appRouter.mountSubRouter("/api/users", userRouter);
+
+    userRouter.get("/")
+      .produces("application/json")
+      .handler(ctx -> {
+        System.out.println(ctx.getAcceptableContentType());
+//        if (ctx.getAcceptableContentType().equals("text/plain")) {
+//          ctx.response().end("Text content");
+//        } else {
+//          ctx.response().end(new JsonObject().put("content", "json").encodePrettily());
+//        }
+        ctx.response().end(new JsonObject().put("content", "json").encodePrettily());
+      });
+
+    vertx.createHttpServer().requestHandler(appRouter).listen(8080, handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Webserver is running at " + handler.result().actualPort());
+      }
+    });
+  }
+}
+..............................................................................................
+				 Verticle(Object) Communications
+.............................................................................................
+
+Object Communication Patterns:
+=>With in Process(Within JVM) (WithIn Vertx Engine)
+=>Across process(Across JVM) (Across Vertx Engine)
+
+With in Process(Within JVM) (WithIn Vertx Engine):
+
+In General java objects talk each other by calling methods on each other.
+
+class OrderController {
+   OrderService service
+   
+  placeOrder(){
+    this.service.processOrder()
+  }
+}
+
+class OrderService{
+
+  processOrder(){
+   return 'order data'
+ }
+}
+
+Vertx:
+class OrderPlacerVerticle extends AbstractVerticle {
+       
+}
+               ||
+class OrderProviderVerticle extends AbstractVerticle {
+
+}
+
+In Vertx verticles communicate by default "Async /in non blocking".
+
+Verticles Communication Styles:
+
+1.Actor Model Communication Style
+  https://doc.akka.io/docs/akka/current/typed/guide/actors-intro.html
+2.HTTP communication Style.
+
+Vertx uses loosly coupled communcation style using "Event Bus"  - which is implemenation  of actor like model.
+
+
+1.message oriented style :Event Bus
+
+Event Bus:
+
+-Event Bus is nerve of vertx systems.
+
+-Vertx By default is distributed
+
+-Vertx carries distributed architecture by default
+
+-In Vertx Verticles can communicate via Centraized Broker which is built in called event Bus.
+-Event Bus uses tcp transport layer by default
+-EventBus can send and recive data in the form of json and buffer
+
+
+Event Bus:
+
+1.Event Bus can allow verticles sends data from one place to another place
+2.Event Bus forms a distributed peer-to-peer messaging system spannining multiple server nodes   and multiple browers.
+3.Event bus allows sending messages in three ways
+  1.pub/sub : one to many
+  2.point-to-point : one to one
+  3.request-reply(reponse) - one to one with acknowlegement.
+
+4.Event bus identifies clients via "addressing"
+   Messages are sent on the event bus to an "address"
+   Address schemes can be any naming convention, recommendation is dns model "in.news.covid"
+   
+5.Handlers
+   Since vertx is non blocking, messages are processed by handlers.
+   You have to register a handler at an address
+
+6.Type of Data
+   Data type of message could be any primitive-int,char,boolean,String, Buffer,JSON
+
+   Per Vertx Engine only One Event Bus-singleTon
+............................................................................................
+
+
+How to get Event Bus Object?
+
+EventBus mybus =  vertx.eventBus();
+
+starting send message
+
+mybus.send
+mybus.publish
+mybus.request
+..............................................................................................
+				   PUB - SUB
+..............................................................................................
+package com.unisys.verticle.communication;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+class Address {
+  public final static String PUB_SUB_ADDRESS = "news.in.covid";
+  public final static String POINT_TO_POINT = "covid.fin.request";
+  public final static String REQUEST_REPLY = "covid.lab.report";
+}
+
+//http verticle
+class CovidCommunicatorVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router appRouter = Router.router(vertx);
+    Router broadcastRouter = Router.router(vertx);
+    appRouter.mountSubRouter("/api/brodcast", broadcastRouter);
+    broadcastRouter.get("/:message").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String message = ctx.pathParam("message");
+      EventBus eventBus = vertx.eventBus();
+      eventBus.publish(Address.PUB_SUB_ADDRESS, message);
+      ctx.response().end("Message has Broad casted");
+    });
+    vertx.createHttpServer().requestHandler(appRouter).listen(8080, handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Event Bus Web Server is running at " + handler.result().actualPort());
+      }
+    });
+
+  }
+}
+
+//PUB - SUB Listener
+class NewsSevenVerticle extends AbstractVerticle {
+  public void consume() {
+    //Get the Reference of Event Bus
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> consumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    //process the message
+    consumer.handler(msg -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + msg.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+class BBCVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    messageConsumer.handler(message -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + message.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+class NDTVVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    messageConsumer.handler(message -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + message.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+public class EventBusMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(EventBusMainVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.deployVerticle(new CovidCommunicatorVerticle());
+    vertx.deployVerticle(new NewsSevenVerticle());
+    vertx.deployVerticle(new BBCVerticle());
+    vertx.deployVerticle(new NDTVVerticle());
+  }
+}
+.............................................................................................
+			Point to Point : one to one Communication
+............................................................................................
+package com.unisys.verticle.communication;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+class Address {
+  public final static String PUB_SUB_ADDRESS = "news.in.covid";
+  public final static String POINT_TO_POINT = "covid.fin.request";
+  public final static String REQUEST_REPLY = "covid.lab.report";
+}
+
+///////////////////////////////////////PUB-SUB//////////////////////////////////////////////////////////
+class CovidCommunicatorVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router appRouter = Router.router(vertx);
+    //pub-sub
+    Router broadcastRouter = Router.router(vertx);
+    //point to point
+    Router pointToPointRouter = Router.router(vertx);
+
+    //Request-Reply
+    Router requestReplyRouter = Router.router(vertx);
+
+
+    appRouter.mountSubRouter("/api/brodcast", broadcastRouter);
+    appRouter.mountSubRouter("/api/requestfin", pointToPointRouter);
+    appRouter.mountSubRouter("/api/status", requestReplyRouter);
+
+
+    broadcastRouter.get("/:message").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String message = ctx.pathParam("message");
+      EventBus eventBus = vertx.eventBus();
+      //publish - one to many
+      eventBus.publish(Address.PUB_SUB_ADDRESS, message);
+      ctx.response().end("Message has Broad casted");
+    });
+
+    pointToPointRouter.get("/:howmuch").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String message = ctx.pathParam("howmuch");
+      EventBus eventBus = vertx.eventBus();
+      //send - one to one
+      eventBus.send(Address.POINT_TO_POINT, message);
+      ctx.response().end("Message has been sent");
+    });
+
+    requestReplyRouter.get("/:name").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String name = ctx.pathParam("name");
+      String messageToSend = "Report of " + name;
+      //send message and get reply : request-reply with ack
+      vertx.eventBus().request(Address.REQUEST_REPLY, messageToSend, asyncResult -> {
+        if (asyncResult.succeeded()) {
+          System.out.println(asyncResult.result().body());
+          ctx.response().end(asyncResult.result().body().toString());
+        } else {
+          System.out.println(asyncResult.cause());
+        }
+      });
+
+    });
+    vertx.createHttpServer().requestHandler(appRouter).listen(8080, handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Event Bus Web Server is running at " + handler.result().actualPort());
+      }
+    });
+
+  }
+}
+
+//PUB - SUB Listener
+class NewsSevenVerticle extends AbstractVerticle {
+  public void consume() {
+    //Get the Reference of Event Bus
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> consumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    //process the message
+    consumer.handler(msg -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + msg.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+class BBCVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    messageConsumer.handler(message -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + message.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+class NDTVVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    messageConsumer.handler(message -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + message.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+///////////////////////////////////////PUB-SUB//////////////////////////////////////////////////////////
+
+///////////////////////////////////////POINT TO POINT//////////////////////////////////////////////////////////
+
+class CenertalFinanceVerticle extends AbstractVerticle {
+
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.POINT_TO_POINT);
+    //handle /process the message/news
+    messageConsumer.handler(news -> {
+      System.out.println("Request 1 -  : " + news.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+///////////Request-Reply///////////////////////////////////////////////////////////////////////
+class LabVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    //pub-sub
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.REQUEST_REPLY);
+    //handle /process the message/news
+    messageConsumer.handler(news -> {
+      System.out.println("Request -  : " + news.body());
+      //sending reply /ack
+      news.reply(news.body() + " who  is Critical , Need More attention");
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+
+public class EventBusMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(EventBusMainVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.deployVerticle(new CovidCommunicatorVerticle());
+    /////pub-sub
+    vertx.deployVerticle(new NewsSevenVerticle());
+    vertx.deployVerticle(new BBCVerticle());
+    vertx.deployVerticle(new NDTVVerticle());
+    //point to point
+    vertx.deployVerticle(new CenertalFinanceVerticle());
+    //request-reply
+    vertx.deployVerticle(new LabVerticle());
+
+  }
+}
+..............................................................................................					Request---Reply
+package com.unisys.verticle.communication;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+
+class Address {
+  public final static String PUB_SUB_ADDRESS = "news.in.covid";
+  public final static String POINT_TO_POINT = "covid.fin.request";
+  public final static String REQUEST_REPLY = "covid.lab.report";
+}
+
+///////////////////////////////////////PUB-SUB//////////////////////////////////////////////////////////
+class CovidCommunicatorVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router appRouter = Router.router(vertx);
+    //pub-sub
+    Router broadcastRouter = Router.router(vertx);
+    //point to point
+    Router pointToPointRouter = Router.router(vertx);
+
+    //Request-Reply
+    Router requestReplyRouter = Router.router(vertx);
+
+
+    appRouter.mountSubRouter("/api/brodcast", broadcastRouter);
+    appRouter.mountSubRouter("/api/requestfin", pointToPointRouter);
+    appRouter.mountSubRouter("/api/status", requestReplyRouter);
+
+
+    broadcastRouter.get("/:message").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String message = ctx.pathParam("message");
+      EventBus eventBus = vertx.eventBus();
+      //publish - one to many
+      eventBus.publish(Address.PUB_SUB_ADDRESS, message);
+      ctx.response().end("Message has Broad casted");
+    });
+
+    pointToPointRouter.get("/:howmuch").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String message = ctx.pathParam("howmuch");
+      EventBus eventBus = vertx.eventBus();
+      //send - one to one
+      eventBus.send(Address.POINT_TO_POINT, message);
+      ctx.response().end("Message has been sent");
+    });
+
+    requestReplyRouter.get("/:name").handler(ctx -> {
+      //Event Bus to send message to other Verticles
+      String name = ctx.pathParam("name");
+      String messageToSend = "Report of " + name;
+      //send message and get reply : request-reply with ack
+      vertx.eventBus().request(Address.REQUEST_REPLY, messageToSend, asyncResult -> {
+        if (asyncResult.succeeded()) {
+          System.out.println(asyncResult.result().body());
+          ctx.response().end(asyncResult.result().body().toString());
+        } else {
+          System.out.println(asyncResult.cause());
+        }
+      });
+
+    });
+    vertx.createHttpServer().requestHandler(appRouter).listen(8080, handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Event Bus Web Server is running at " + handler.result().actualPort());
+      }
+    });
+
+  }
+}
+
+//PUB - SUB Listener
+class NewsSevenVerticle extends AbstractVerticle {
+  public void consume() {
+    //Get the Reference of Event Bus
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> consumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    //process the message
+    consumer.handler(msg -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + msg.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+class BBCVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    messageConsumer.handler(message -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + message.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+class NDTVVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.PUB_SUB_ADDRESS);
+    messageConsumer.handler(message -> {
+      System.out.println(this.getClass().getSimpleName() + " => " + message.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+///////////////////////////////////////PUB-SUB//////////////////////////////////////////////////////////
+
+///////////////////////////////////////POINT TO POINT//////////////////////////////////////////////////////////
+
+class CenertalFinanceVerticle extends AbstractVerticle {
+
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.POINT_TO_POINT);
+    //handle /process the message/news
+    messageConsumer.handler(news -> {
+      System.out.println("Request 1 -  : " + news.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+///////////Request-Reply///////////////////////////////////////////////////////////////////////
+class LabVerticle extends AbstractVerticle {
+  public void consume() {
+    EventBus eventBus = vertx.eventBus();
+    //pub-sub
+    MessageConsumer<String> messageConsumer = eventBus.consumer(Address.REQUEST_REPLY);
+    //handle /process the message/news
+    messageConsumer.handler(news -> {
+      System.out.println("Request -  : " + news.body());
+      //sending reply /ack
+      news.reply(news.body() + " who  is Critical , Need More attention");
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consume();
+  }
+}
+
+
+public class EventBusMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(EventBusMainVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.deployVerticle(new CovidCommunicatorVerticle());
+    /////pub-sub
+    vertx.deployVerticle(new NewsSevenVerticle());
+    vertx.deployVerticle(new BBCVerticle());
+    vertx.deployVerticle(new NDTVVerticle());
+    //point to point
+    vertx.deployVerticle(new CenertalFinanceVerticle());
+    //request-reply
+    vertx.deployVerticle(new LabVerticle());
+
+  }
+}
+............................................................................................
+	HTTP communication - Web Clients-Sending and receving messages via http protocal
+............................................................................................
 
 
 
