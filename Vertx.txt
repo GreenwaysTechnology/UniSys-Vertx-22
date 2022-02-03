@@ -3075,42 +3075,1116 @@ public class EventBusMainVerticle extends AbstractVerticle {
 	HTTP communication - Web Clients-Sending and receving messages via http protocal
 ............................................................................................
 
+Web Client:
+
+Vert.x Web Client is an asynchronous HTTP and HTTP/2 client.
+
+The Web Client makes easy to do HTTP request/response interactions with a web server, and provides advanced features like:
+
+Json body encoding / decoding
+request/response pumping
+request parameters
+unified error handling
+form submissions
+
+How to add web client in project?
+pom.xml
+<dependency>
+ <groupId>io.vertx</groupId>
+ <artifactId>vertx-web-client</artifactId>
+ <version>4.2.4</version>
+</dependency>
+
+
+package com.unisys.nonblocking.http.web.communication;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.handler.BodyHandler;
+
+class HelloVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router router = Router.router(vertx);
+    router.route().handler(BodyHandler.create());
+    router.get("/api/hello").handler(routingContext -> {
+      routingContext.response().end("Hello");
+    });
+
+    vertx.createHttpServer()
+      .requestHandler(router)
+      .listen(3000, httpServerAsyncResult -> {
+        if (httpServerAsyncResult.succeeded()) {
+          System.out.println("Provider(Hello) Verticle Server is Running " + httpServerAsyncResult.result().actualPort());
+        }
+      });
+  }
+}
+
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router router = Router.router(vertx);
+    WebClient webClient = WebClient.create(vertx);
+
+    router.route().handler(BodyHandler.create());
+    router.get("/api/greet").handler(routingContext -> {
+      //we communiate hello verticle and get data and send
+     // HttpRequest<Buffer> httpRequest = webClient.get(3000, "localhost", "/api/hello");
+      HttpRequest<Buffer> httpRequest = webClient.getAbs("http://localhost:3000/api/hello");
+      httpRequest.send(response -> {
+        if (response.succeeded()) {
+          System.out.println(response.result().bodyAsString());
+          routingContext.response().setStatusCode(200).end(response.result().bodyAsString());
+        } else {
+          routingContext.response().setStatusCode(200).end(response.cause().getMessage());
+        }
+      });
+
+    });
+    vertx.createHttpServer()
+      .requestHandler(router)
+      .listen(3001, httpServerAsyncResult -> {
+        if (httpServerAsyncResult.succeeded()) {
+          System.out.println("Consumer(Greeter) Verticle Server is Running " + httpServerAsyncResult.result().actualPort());
+        }
+      });
+  }
+}
+//call third party web service communication.
+
+class UsersVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    Router router = Router.router(vertx);
+    WebClient webClient = WebClient.create(vertx);
+
+    router.get("/api/users").handler(routingContext -> {
+
+      webClient.getAbs("https://jsonplaceholder.typicode.com/users").send(res -> {
+        System.out.println(res.result().bodyAsJsonArray());
+        routingContext.response()
+          .putHeader("content-type", "application/json")
+          .setStatusCode(200).end(res.result().bodyAsJsonArray().encodePrettily());
+
+      });
+
+    });
+    vertx.createHttpServer()
+      .requestHandler(router)
+      .listen(3002, httpServerAsyncResult -> {
+        if (httpServerAsyncResult.succeeded()) {
+          System.out.println("Users Verticle Server is Running " + httpServerAsyncResult.result().actualPort());
+        }
+      });
+  }
+}
+
+
+public class WebClientVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(WebClientVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.deployVerticle(new GreeterVerticle());
+    vertx.deployVerticle(new HelloVerticle());
+    vertx.deployVerticle(new UsersVerticle());
+  }
+}
+.............................................................................................
+				Vertx and Relational database:
+.............................................................................................
+
+Vertx and Relational database:
+..............................
+
+JDBC is a technoloy through which you can connect relational databases.
+
+JDBC works database independant , you can connect with any databases with help of jdbc driver.
+
+now a days we are using orm frameworks -jpa,hibernate; orm internally uses jdbc only.
+
+vertx as of no orm support. you have to write jdbc code only. jdbc is non blocking.
+
+JDBC is nonblocking , so apis are callback based or reactive based.
+
+Lets start coding:
+
+1.you jdbc dependency.
+
+<dependency>
+ <groupId>io.vertx</groupId>
+ <artifactId>vertx-jdbc-client</artifactId>
+</dependency>
+1.create JDBCClient Object
+
+   final JDBCClient client = JDBCClient.createShared(vertx, new JsonObject()
+        .put("url", "jdbc:hsqldb:mem:test?shutdown=true")
+        .put("driver_class", "org.hsqldb.jdbcDriver")
+        .put("max_pool_size", 30)
+        .put("user", "SA")
+        .put("password", ""));
+
+
+2.You have to use callback chain pattern
+   connection succcess
+		|
+		do sql operations
+   else
+    |
+   throw Connection.
+
+client.getConnection(connection -> {
+      if (connection.succeeded()) {
+        System.out.println("COnnection is ready");
+        
+      } else {
+        System.out.println(connection.cause());
+      }
+    });
+
+3.Get SqlConnection instance
+    client.getConnection(connection -> {
+      if (connection.succeeded()) {
+        System.out.println("COnnection is ready");
+        //get conneciton object
+        final SQLConnection con = connection.result();
+
+
+      } else {
+        System.out.println(connection.cause());
+      }
+    });
+
+
+3.Table creation :
+client.getConnection(connection -> {
+      if (connection.succeeded()) {
+        System.out.println("COnnection is ready");
+        //get conneciton object
+        final SQLConnection con = connection.result();
+        String CREATE_TABLE = "create table test(id int primary key, name varchar(255))";
+        con.execute(CREATE_TABLE, tableCreate -> {
+          if (tableCreate.failed()) {
+            System.out.println(tableCreate.cause());
+          } else {
+            System.out.println("Tables are created");
+            
+          }
+
+        });
+
+      } else {
+        System.out.println(connection.cause());
+      }
+    });
+
+3.Table insert and select
+
+client.getConnection(connection -> {
+      if (connection.succeeded()) {
+        System.out.println("COnnection is ready");
+        //get conneciton object
+        final SQLConnection con = connection.result();
+        String CREATE_TABLE = "create table test(id int primary key, name varchar(255))";
+        con.execute(CREATE_TABLE, tableCreate -> {
+          if (tableCreate.failed()) {
+            System.out.println(tableCreate.cause());
+          } else {
+            System.out.println("Tables are created");
+
+            String INSERT_QUERY = "insert into test values(1, 'Hello')";
+            con.execute(INSERT_QUERY, tableInsert -> {
+
+              if (tableInsert.failed()) {
+                System.out.println(tableInsert.cause());
+              } else {
+                //show sample data; write select query
+                String SELECT_QUERY = "select * from test";
+                con.query(SELECT_QUERY, selectResult -> {
+                  for (JsonArray line : selectResult.result().getResults()) {
+                    System.out.println(line.encode());
+                  }
+                  // and close the connection
+                  con.close(done -> {
+                    if (done.failed()) {
+                      throw new RuntimeException(done.cause());
+                    }
+                  });
+                });
+              }
+            });
+          }
+
+        });
+..............................................................................................
+package com.unisys.databases;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.jdbc.JDBCClient;
+import io.vertx.ext.sql.SQLConnection;
+
+public class JDBCClientVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(JDBCClientVerticle.class);
+  }
+
+  public void prepareDatabase() {
+    JsonObject connectionString = new JsonObject()
+      .put("url", "jdbc:hsqldb:mem:test?shutdown=true")
+      .put("driver_class", "org.hsqldb.jdbcDriver")
+      .put("max_pool_size", 30)
+      .put("user", "SA")
+      .put("password", "");
+    JDBCClient jdbcClient = JDBCClient.createShared(vertx, connectionString);
+    //Establishing connection
+    jdbcClient.getConnection(connection -> {
+      if (connection.succeeded()) {
+        System.out.println("Connection is success");
+        //Connection Reference
+        SQLConnection sqlConnection = connection.result();
+        String CREATE_TABLE = "create table user(id int primary key, name varchar(255))";
+        sqlConnection.execute(CREATE_TABLE, tableCreate -> {
+          if (tableCreate.succeeded()) {
+            String INSERT_QUERY = "insert into user values(1, 'subramanian')";
+            sqlConnection.execute(INSERT_QUERY, tableInsert -> {
+
+              if (tableInsert.failed()) {
+                System.out.println(tableInsert.cause());
+              } else {
+                //show sample data; write select query
+                String SELECT_QUERY = "select * from user";
+                sqlConnection.query(SELECT_QUERY, selectResult -> {
+                  for (JsonArray line : selectResult.result().getResults()) {
+                    System.out.println(line.encode());
+                  }
+                  // and close the connection
+                  sqlConnection.close(done -> {
+                    if (done.failed()) {
+                      throw new RuntimeException(done.cause());
+                    }
+                  });
+                });
+              }
+            });
+
+          } else {
+            System.out.println("Tables are created");
+          }
+
+        });
+
+      } else {
+        System.out.println("Connection is failed");
+      }
+    });
+
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    prepareDatabase();
+  }
+
+}
+.............................................................................................
+				Vertx Threading Models 
+			    (Non blocking and blocking code)
+
+
+Vertx Threading Models:
+
+1.Vertx provides a pool threads to handle async actions(events) via Event Pool Threads.
+  Per Vertx engine ,no event loop thread is equal to no of cpu core.
+
+2.Vertx Provides another pool of threads to handle blocking operations called "Worker pool threads".
+
+
+Blocking code
+
+-Thread.sleep
+-long running task
+-legacy file io
+-legacy network 
+-database 
+-external api
+
+
+ Any blocking code can't be executed inside event loop thread.
+ Any blocking code must be executed in a separte threads - Worker pool threads.
+ Worker pool threads are used for running long running blocking code.
+
+Use case : -1  Getting Event loop thread information
+
+package com.unisys.threading;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.example.util.Runner;
+
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+  }
+}
+
+
+public class BlockingVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(BlockingVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(BlockingVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+
+    for (int i = 1; i < 27; i++) {
+      vertx.deployVerticle(new GreeterVerticle());
+
+    }
+  }
+}
+
+OUTPUT:
+com.unisys.threading.BlockingVerticle is Running on vert.x-eventloop-thread-1
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-2
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-3
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-5
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-4
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-6
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-7
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-8
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-9
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-10
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-13
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-11
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-14
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-16
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-15
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-12
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-17
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-18
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-20
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-19
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-21
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-22
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-23
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-0
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-2
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-3
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-1
+
+
+Use case 1: Writing blocking code:
+..................................
+
+Thread.sleep
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+    //blocking code.
+    try {
+      Thread.sleep(1000);
+      System.out.println("Hi i am  output after blocking!!!");
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+}
+when you run the above code , you will get output.
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-2
+Hi i am  output after blocking!!!
+
+The 2nd Version , increasing timeout from 1000 to 3000
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+    //blocking code.
+    try {
+      Thread.sleep(3000);
+      System.out.println("Hi i am  output after blocking!!!");
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+}
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-2
+Feb 03, 2022 3:51:46 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 2443 ms, time limit is 2000 ms
+Hi i am  output after blocking!!!
+ 
+ Here we are getting warning, means that you have blocked the current event loop thread  more than 2000 ms.
+
+         "Event loop thread can be blocked up to 2000ms" => Default time out for a thread
+
+
+Suppose if you block the thread 5000ms, you will get more warnings
+
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+    //blocking code.
+    try {
+      Thread.sleep(5000);
+      System.out.println("Hi i am  output after blocking!!!");
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+}
+
+Feb 03, 2022 3:54:33 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 2633 ms, time limit is 2000 ms
+Feb 03, 2022 3:54:34 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 3634 ms, time limit is 2000 ms
+Feb 03, 2022 3:54:35 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 4635 ms, time limit is 2000 ms
+Hi i am  output after blocking!!!
+..............................................................................................
+
+more than 3 warnings, still thread is blocked, it will throw exeception
+
+io.vertx.core.VertxException: Thread blocked
+
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+    //blocking code.
+    try {
+      Thread.sleep(8000);
+      System.out.println("Hi i am  output after blocking!!!");
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+
+com.unisys.threading.BlockingVerticle is Running on vert.x-eventloop-thread-1
+com.unisys.threading.GreeterVerticle is Running on vert.x-eventloop-thread-2
+Feb 03, 2022 3:56:01 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 2631 ms, time limit is 2000 ms
+Feb 03, 2022 3:56:02 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 3633 ms, time limit is 2000 ms
+Feb 03, 2022 3:56:03 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 4634 ms, time limit is 2000 ms
+Feb 03, 2022 3:56:04 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 5636 ms, time limit is 2000 ms
+io.vertx.core.VertxException: Thread blocked
+	at java.base@11.0.11/java.lang.Thread.sleep(Native Method)
+	at app//com.unisys.threading.GreeterVerticle.start(BlockingVerticle.java:14)
+	at app//io.vertx.core.impl.DeploymentManager.lambda$doDeploy$5(DeploymentManager.java:196)
+	at app//io.vertx.core.impl.DeploymentManager$$Lambda$80/0x0000000800179840.handle(Unknown Source)
+	at app//io.vertx.core.impl.AbstractContext.dispatch(AbstractContext.java:100)
+	at app//io.vertx.core.impl.AbstractContext.dispatch(AbstractContext.java:63)
+	at app//io.vertx.core.impl.EventLoopContext.lambda$runOnContext$0(EventLoopContext.java:38)
+	at app//io.vertx.core.impl.EventLoopContext$$Lambda$81/0x000000080017a440.run(Unknown Source)
+	at app//io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:164)
+	at app//io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:469)
+	at app//io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:503)
+	at app//io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:986)
+	at app//io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at app//io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base@11.0.11/java.lang.Thread.run(Thread.java:834)
+
+Feb 03, 2022 3:56:05 PM io.vertx.core.impl.BlockedThreadChecker
+WARNING: Thread Thread[vert.x-eventloop-thread-2,5,main] has been blocked for 6638 ms, time limit is 2000 ms
+.............................................................................................
+		What if i want to write blocking code inside non blocking context
+.............................................................................................
+
+There are two ways to run blocking code.
+
+1.Convert the Event loop thread verticle into worker verticle 
+
+2.I dont want to run the entire verticle in worker thread rather only few apis.
 
 
 
+Types of Verticle:
+
+1.standard Verticle
+   Verticles are normal , executed by event loop thread
+2.Woker verticles
+   Verticles are special,executed by a separate thread of execution called "Worker poll threads".
+
+How to create Worker Verticle?
+ 
+Before worker verticle:
+
+Vertx Configurations:
+
+Most of the Vertx objects are configurable using "Configuration Objects".
+
+->HTTP Server Configuration Object
+     HttpServerOptions
+ HttpServerOptions serverOptions = new HttpServerOptions()
+      .setPort(8080).setHost("localhost");
+->Event Bus configuration OBject
+  DeliveryOptions options = new DeliveryOptions().addHeader("myheader","value");
+      vertx.eventBus().send("hello",options);
+
+->Verticle configuration Object, is passed while deployment.
+   DeploymentOptions options = new DeploymentOptions().setWorker(true)
+   vertx.deployVerticle("com.mycompany.MyVerticle", options);
+
+->Vertx Configuration Object, which change the vertx engine configuration
+  VertxOptions
 
 
+Blocking Verticle:
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+    //blocking code.
+    try {
+      Thread.sleep(8000);
+      System.out.println("Hi i am  output after blocking!!!");
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+}
+DeploymentOptions deploymentOptions = new DeploymentOptions().setWorker(true);
+    vertx.deployVerticle(new GreeterVerticle(),deploymentOptions);
+..............................................................................................
+
+vert.excuteBlocking:
+class UserVerticle extends AbstractVerticle {
+
+  private void resultHandler(AsyncResult<String> resultHandler) {
+    System.out.println("Result Handler" + Thread.currentThread().getName());
+    if (resultHandler.succeeded()) {
+      System.out.println("Blocking api Result goes Ready Here");
+      System.out.println(resultHandler.result());
+    } else {
+      System.out.println(resultHandler.cause().getMessage());
+    }
+  }
+
+  //blocking method : this operation should be handled by worker pool thread
+  public void findAll(Promise<String> promise) {
+    System.out.println("findAll : " + Thread.currentThread().getName());
+    try {
+      Thread.sleep(4000);
+      System.out.println("Wake Up for sending data to Non blocking Service");
+      //this result will be accessed inside non blocking code
+      promise.complete("Hey this is blocking Result");
+
+    } catch (InterruptedException es) {
+      promise.fail("Something went wrong in blocking service");
+    }
+  }
+  //non blocking method
 
 
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    //how to wrap blocking code.
+    vertx.executeBlocking(this::findAll, this::resultHandler);
+  }
+}
+package com.unisys.threading;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.example.util.Runner;
+import io.vertx.ext.web.Router;
 
 
+class UserVerticle extends AbstractVerticle {
+
+  private void resultHandler(AsyncResult<String> resultHandler) {
+    System.out.println("Result Handler" + Thread.currentThread().getName());
+    if (resultHandler.succeeded()) {
+      System.out.println("Blocking api Result goes Ready Here");
+      System.out.println(resultHandler.result());
+    } else {
+      System.out.println(resultHandler.cause().getMessage());
+    }
+  }
+
+  //blocking method : this operation should be handled by worker pool thread
+  public void findAll(Promise<String> promise) {
+    System.out.println("findAll : " + Thread.currentThread().getName());
+    try {
+      Thread.sleep(4000);
+      System.out.println("Wake Up for sending data to Non blocking Service");
+      //this result will be accessed inside non blocking code
+      promise.complete("Hey this is blocking Result");
+
+    } catch (InterruptedException es) {
+      promise.fail("Something went wrong in blocking service");
+    }
+  }
+  //non blocking method
 
 
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    //how to wrap blocking code.
+    vertx.executeBlocking(this::findAll, this::resultHandler);
+
+    //web end point
+    Router router = Router.router(vertx);
+
+    //non blocking handler :  handler
+    //router.get("/api/blocking").handler(routingContext -> {});
+    router.get("/api/blocking").blockingHandler(rc -> {
+      System.out.println("Http Request Served => " + Thread.currentThread().getName());
+      try {
+        //blocking code
+        Thread.sleep(5000);
+        String blockingResult = "Blocking result";
+        rc.response().end(blockingResult);
+      } catch (Exception e) {
+
+      }
+    });
+
+    vertx.createHttpServer().requestHandler(router).listen(8888, ar -> {
+      System.out.println("Non Blocking and Blocking Server " + ar.result().actualPort());
+    });
 
 
+  }
+}
 
 
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    System.out.println(GreeterVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+    //blocking code.
+    try {
+      Thread.sleep(8000);
+      System.out.println("Hi i am  output after blocking!!!");
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+}
 
 
+public class BlockingVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(BlockingVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+
+    System.out.println(BlockingVerticle.class.getName() + " is Running on " + Thread.currentThread().getName());
+
+    HttpServerOptions serverOptions = new HttpServerOptions()
+      .setPort(8080).setHost("localhost");
+    vertx.createHttpServer(serverOptions).requestHandler(httpServerRequest -> {
+      DeliveryOptions options = new DeliveryOptions().addHeader("myheader", "value");
+      vertx.eventBus().send("hello", options);
+    }).listen(httpServerAsyncResult -> {
+      System.out.println(httpServerAsyncResult.result().actualPort());
+    });
+
+    //worker verticle
+    DeploymentOptions deploymentOptions = new DeploymentOptions().setWorker(true);
+    vertx.deployVerticle(new GreeterVerticle(), deploymentOptions);
+
+    //Regular verticle with blocking code
+    vertx.deployVerticle(new UserVerticle());
+//
+
+//    for (int i = 1; i < 27; i++) {
+//      vertx.deployVerticle(new GreeterVerticle());
+//
+//    }
+  }
+}
+..............................................................................................
+				Vertx and MicroServices
+..............................................................................................
+Application Pattern:
+
+1.old style  -monolithic
+
+2.new style  -Microservices
+ 
+ Indepedant Development,Testing,deployment,Maintaince,Team but collabrate.
+.............................................................................................
+Monolith:
+
+-Technology first J2EE, Domain Next.
 
 
+Team: OMS - PM- More PLS
+1. DEV
+2. TESTING
+3. RELEASE
+4. OPERATIONS
 
 
+1.Req
+2.Design
+   High Level-UML,Database
+   Low level - Runtime,databases,tools......
+3.coding
+
+-Vendor-lock in : Mono-lithic
+   -DEV,TESTING,PRODUCTION.
+-Work flow is highly sequencial
+   Req -Complete
+   Dev
+   testing
+   Release
+   Production
+  Delay in delivery:Cost increased
+-Production cost was huge
+
+Data Centers
+ -need to purchase high powered servers - bare metal servers
+ 
+Cost:
+   -Hardware
+   -OS -Linux-Ubuntu
+   -Tools -Servers,databases etc....
+   -Matrix Hell -  Mapping software components in dev and Production..
 
 
+How to build enterprise jee based app.
+
+App  must support a variety of different clients including desktop browsers. 
+
+The application might also expose an API for 3rd parties to consume.
+
+It might also integrate with other applications via a message broker. 
+
+The application handles requests (HTTP requests and messages) by executing business logic; 
+
+accessing a database; 
+
+exchanging messages with other systems;
+
+and returning a HTML/JSON/XML response. 
+
+There are logical components corresponding to different functional areas of the application.
+
+............................................................................................
+
+IF App needs to talk to external systems like Message Brokers, other Systems like Main frames.
+
+RPC/RPI
+MOM
+Connectors Arch.
+
+BIZ LOGIC:
+
+1- Service Layer : isloate service layer into separate component
+
+ can be inside one app - one layer, that layer may run on different jvms -  distributed Arch.
 
 
+Layer :
+
+ Client ---- Web Layer  ----Service Layer ---- Repository Layer
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Packaging Model:
+ 
+WAR - Web archive
+EAR .
+
+Problems with Single JAR/WAR:
+
+1. Scalability
+ Vertical scablitity
+ Horzitional scability 
+
+2.Deployments
+    -Bare Metal Deployment
+
+////////////////////////////////////////////////////////////////////////////////////////////
+Monoloith distributed app development drabackbacks:
+
+-Time is taken for project delivery
+   -Requirements 
+   -High level design and low level design
+   -coding
+   -testing
+   -release
+   -production- live
+
+-Technology Stack and Vendor lock in
+   -You need to build the entire app using one technology or one vendor product
+    eg: J2EE, Oracle,Weblogic
+
+-Production and maintance cost
+  -You need to setup large data centers , you need to maintain them.
+
+Companies like amzon,netflix,google wanted to change the app development model.
+                                "Micro services"
 
 
+Micro services are architural model of req,dev,test,relase,production,maintaince different ways.
+    Continous req collecting
+    Continous dev
+    Continuous testing
+    Continuous release
+    Continuous deployment
+    Using rented data centers: Cloud
+
+-Domain First, Technology Next: Domain Driven Design.
+-No Vendor lock- Multi tech stack.
+-Indidual dev , deployment - orders is development ,tested,deployed,customers are developed,tested deployment.
+   -Parrel dev.
+-Automation -dev ops
+   release - CI 
+   deployment - Containerized - Docker..
+-Introduction of Cloud computing
+..............................................................................................
+
+How to start Building Microservices?
 
 
+Road Map :
+
+0.Tech Stack - Java,Javascript,Go,Python.....,Mixed
+1.Infrastructure
+ ->Framework 
+	SpringCloud,Vertx,Quarks....
+        Moleculer,StrongLoop....
+ ->Deployment
+      Cloud
+      Containers
+      Cloud + Containers
+ ->Management tools
+     metrics
+     loggers
+     tracing
+ ->Integration
+	api gateway
+        message brokers
+        esb
+
+2.Development
+     -Coding
+  Development Infrastructure
+   Communication Patterns 
+          -HTTP,TCP,HTTP2,protobuf....
+          Brokers -  Message Brokers
+   Fault Managment
+   Transaction management
+   configuration management
 
 
+MicroService App  == { infrastructure  +   coding }
+
+.............................................................................................
+				What any software offers to users
+			    (What microservice software offers to users)
+
+                                         "Data"
+                                       
+..............................................................................................
+
+How to expose data to users?
+
+      "API"  ---------Application Programming interface
+..............................................................................................
+
+How to design / implement API?
+
+      "Object" - Object encapsulate API
+
+Object is represented as "Service" - Service Design
+..............................................................................................
+
+API Design Types in Web:
+........................
+
+1.REST API
+
+2.GRAPHQL API
+
+3.RPC
+   Regular api which to be called via tcp or local method call
+  gRPC is most popular rpc implementations
+..............................................................................................
+				Microservice Implementation
+
+Service Implementation:
+
+1.Verticle
+    ->HTTP verticle
+    ->Message driven Verticle - event Bus
+    ->gRpc Verticle -  RPC implemenation
+
+.............................................................................................
+				Vertx Configurgation.
 
 
+How to configure Vertx application:
+
+Vert.x Config
+  This component provides an extensible way to configure Vert.x applications.
 
 
+Configuration Stores(Storage):
+..............................
 
+Physical storage:
+
+1.files
+2.directories -ldap....
+3.HTTP Servers - a separate HTTP server.
+4.Redis
+5.System Properties
+6.environment properties
+7.In memory Store: Application memory
+
+Configuration representation inisde vertx is json object.
+
+Storage file formats:
+1.yaml
+2.json
+3.properties
+......
+Verticle:
+ -can read config  data from the Vertx Context Object / DeploymentOptions
+ -can read config data  from the file via command line args
+ -can read from any storage via Vertx-Config module objects like ConfigReteriver.
+
+
+Verticles and Configuration:
+package com.unisys.microservices.config;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+
+class GreeterVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    JsonObject config = config();
+    System.out.println(config.encodePrettily());
+    String message = config.getString("message", "default");
+    int port = config.getInteger("port", 8080);
+    System.out.println("=>" + message.toUpperCase());
+
+    vertx.createHttpServer()
+      .requestHandler(request -> {
+        request.response().end(config().getString("message", "You are lucky!!"));
+      })
+      .listen(config().getInteger("http.port", 3000));
+  }
+}
+
+
+public class ConfigMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ConfigMainVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    JsonObject config = new JsonObject().put("message", "Hello!!!")
+      .put("port", 3000).put("http.port",3002);
+    DeploymentOptions options = new DeploymentOptions().setConfig(config);
+//    DeploymentOptions options = new DeploymentOptions();
+
+    vertx.deployVerticle(new GreeterVerticle(), options);
+  }
+}
+
+..............................................................................................
+
+Config From Configuration System:
+package com.unisys.microservices.config;
+
+import io.vertx.config.ConfigRetriever;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+
+class ApplicationVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    ConfigStoreOptions options = new ConfigStoreOptions()
+      .setType("file")
+      .setFormat("json")
+      .setConfig(new JsonObject().put("path", "conf/config.json"));
+    ConfigRetriever retriever = ConfigRetriever.create(vertx,
+      new ConfigRetrieverOptions().addStore(options));
+
+    retriever.getConfig(config -> {
+      if (config.succeeded()) {
+        System.out.println("Config is Ready");
+        //System.out.println(config.result());
+        JsonObject configRes = config.result();
+        System.out.println(configRes.getString("appName"));
+        System.out.println(configRes.getString("version"));
+
+      } else {
+        System.out.println("Config Error : " + config.cause());
+      }
+    });
+
+  }
+}
+
+public class ExternalConfigMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ExternalConfigMainVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.deployVerticle(new ApplicationVerticle());
+  }
+}
 
 
 
