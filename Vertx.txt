@@ -4186,6 +4186,1730 @@ public class ExternalConfigMainVerticle extends AbstractVerticle {
   }
 }
 
+How to read config data from the git?
+
+Req:
+
+Logger dependency must be available in class path.
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+package com.unisys.microservices.config;
+
+import io.vertx.config.ConfigRetriever;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+
+class ApplicationVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    // System.out.println("hello");
+    ConfigStoreOptions git = new ConfigStoreOptions()
+      .setType("git")
+      .setConfig(new JsonObject()
+        .put("url", "https://github.com/cescoffier/vertx-config-test.git")
+        .put("path", "local")
+        .put("filesets",
+          new JsonArray().add(new JsonObject().put("pattern", "*.json"))));
+
+    ConfigRetriever retriever = ConfigRetriever.create(vertx,
+      new ConfigRetrieverOptions().addStore(git));
+
+    retriever.getConfig().onSuccess(jsonObject -> {
+      System.out.println("inside config" + jsonObject);
+    }).onFailure(err -> {
+      System.out.println("error " + err.getMessage());
+
+    });
+    vertx.createHttpServer().requestHandler(httpServerRequest -> {
+
+      httpServerRequest.response().end("Hello");
+    }).listen(8080, ar -> {
+      System.out.println("server is running");
+    });
+
+}
+
+public class ExternalConfigMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ExternalConfigMainVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    vertx.deployVerticle(new ApplicationVerticle());
+  }
+}
+.............................................................................................
+				 Reactive Programming/System
+.............................................................................................
+
+
+
+What is Reactive?
+
+  Oxford dictionary defines reactive  as "showing a response to a stimulus"
+
+Showing a response to a stimulus
+
+1.1 (Physiology) Showing an immune response to a specific antigen
+
+1.2 (of a disease or illness) caused by a reaction to something: ‘reactive
+depression’
+
+Acting in response to a situation rather than creating or controlling it
+
+Reactive means Showing response(result) based on events(Event driven Programming model).
+
+Why Reactive?
+
+We start from the desire to build a system that is "responsive to users". This means the
+system should respond to user input in a timely fashion under all circumstances.
+
+Because any single computer can fail at any time, we need to distribute such a system
+over multiple computers.
+
+............................................................................................
+					Reactive Systems
+
+The Software system we build called distributed systems(MicroService) must have the following properties , if the system has the following properties the system is reactive.
+
+
+1.It must react to its users (responsive).
+2.It must react to failure and stay available (resilient).
+3.It must react to variable load conditions (elastic).
+4.It must react to inputs (message-driven).
+
+Systems built as Reactive Systems are more flexible, loosely-coupled and scalable.
+
+
+How to build reactive applications?
+
+There are patterns and implementations available.
+
+
+InfraStructure Pattern:
+
+-elastic patterns
+  Scalling apps vertically and horizontal using hardware and software resources.
+
+  increasing more machines based on load using Clusters and load balancer -Vertical scalling
+  decreasing machines as much as possible using "Nonblocking and async" architecture-  horizontal 
+
+Vertx supports both scalling;
+
+horizontal scalling via "NonBlocking implementations" - Less threads ,more concurrency.
+
+Vertical scalling via "Vertx Clusters"
+
+Vertx even supports virtualization using "container technology".
+
+
+Software Patterns:
+
+1.Message Driven
+   Software components exchange messages async.
+ Vertx supports async messsage passing via "eventbus"
+ Vertx Supports async message passing via "rxprogramming -reactive apis"
+ 
+2.Resilient :
+   Falut Management. if sofware components interacts subject to fault.
+
+Vertx provides fault management via
+
+1.CircuiteBreaker
+2.Resilience4j - third party
+3.Rx Programming apis
+.............................................................................................
+		How to integrate Reactive Principles in Programming languages
+
+
+Reactive Princples  started implementation in Microsoft by Erik Meijer. who created /implemented reactive priciples in c#(.net platform), after that Netflix started implementing the same idea using Java Language.
+
+Reactive Framework /Extensions on Programming language:
+........................................................
+https://reactivex.io/languages.html
+1..net   -rx.net
+2.java  - rxjava
+
+https://akka.io/
+AKKA
+.............................................................................................
+
+How to write reactive programming in java?
+
+All Reactive Programming uses three principles
+
+1.Observable Design pattern - Used to design event driven model.
+
+2.Iterator design pattern -  used to pull and push data async/sync
+
+3.Functional style patterns(pure functions/immutablity)
+
+.............................................................................................
+
+Java and Reactive Programming implementation
+
+1.Rxjava
+2.Project Reactor - Spring Boot
+3.Mutiny  - RedHat, used in side Quarkus and vertx
+.............................................................................................
+
+How to write Rxjava programming?
+
+<dependency>
+  <groupId>io.reactivex.rxjava3</groupId>
+  <artifactId>rxjava</artifactId>
+  <version>3.1.3</version>
+</dependency>
+
+
+Core Concepts;
+
+1.Publisher /Callee/Provider
+  Who sends data based evt driven programming
+  Publishers emits Event.
+Event types:
+ 1.data event - onData
+     is triggered when data is ready to sent
+ 2.error event - onError
+     is trigger when some execption occurs during streaming
+ 3.complete event -onComplete
+     is triggered if no more events are emitted.
+
+2.Subscriber/Callee/Listener
+  
+   Who listens for events(data,error,complete).
+   What ever events are emitted,Subscriber invokes a callback function, process the events.
+
+3.Stream
+    Flow of data /sequenence of data from publisher to subscriber.
+   
+4.Operators
+    Apis/methods for creating stream,sending events,processing events.
+
+5.back pressure(Reactive Streams spec).
+
+1.Publisher /Callee/Provider && Subscriber
+  Both are java objects only.
+
+Rxjava Provides different varients of publisher.
+
+1.Observable
+2.Subject
+3.Single
+4.Maybe
+5.Completeable
+6.Flowable
+
+How to stream data?
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Observable;
+
+public class FirstPublisher {
+    public static Observable<String> publishMessage() {
+        return Observable.create(subscriber -> {
+            System.out.println();
+            //push data to the subscriber
+            subscriber.onNext("Hello"); //
+            subscriber.onNext("How are you");
+            subscriber.onNext("Welcome");
+            subscriber.onError(new RuntimeException("oops!"));
+            subscriber.onNext("Goodbye");
+            //no more data
+            subscriber.onComplete();
+        });
+    }
+
+    public static void main(String[] args) {
+        //caller - Subscriber
+        publishMessage().subscribe(onNext -> {
+            System.out.println(onNext);
+        }, onError -> {
+            System.out.println(onError);
+        }, () -> {
+            System.out.println("Stream is over");
+        });
+    }
+}
+..............................................................................................
+
+Transformation:
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Observable;
+
+public class TransformingObservable {
+    public static Observable<String> publishMessage() {
+        return  Observable.create(subscriber -> {
+            //push data to the subscriber
+            subscriber.onNext("Hello"); //
+            subscriber.onNext("How are you");
+            subscriber.onNext("Welcome");
+            subscriber.onNext("Goodbye");
+            //no more data
+            subscriber.onComplete();
+        }).map(item -> {
+            return item.toString().toUpperCase();
+        });
+
+
+}
+
+    public static void main(String[] args) {
+        //caller - Subscriber
+        publishMessage().subscribe(onNext -> {
+            System.out.println(onNext);
+        }, onError -> {
+            System.out.println(onError);
+        }, () -> {
+            System.out.println("Stream is over");
+        });
+    }
+}
+...........................................................................................
+
+Data Sources and Streaming:
+
+I have an array, List, sequence of numbers , how to stream them.
+
+Observable provides factory api to stream particular type of data source.
+
+for sequence of items
+
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Observable;
+
+import java.util.List;
+
+public class DataSourcePublisher {
+    public static Observable<Integer> publishNumbers() {
+        return Observable.just(1, 2, 3, 4, 5, 6)
+                .map(DataSourcePublisher::doubleIt)
+                .filter(DataSourcePublisher::isEven);
+    }
+
+    //publish numbers 1 to 100
+    public static Observable<Integer> publishLongNumbers() {
+        return Observable.range(1, 100)
+                .filter(DataSourcePublisher::isEven);
+    }
+
+    //publish array of items
+    public static Observable<Integer> publishArrayOfItems() {
+        Integer[] array = {1, 2, 3, 4, 5};
+        return Observable.fromArray(array);
+    }
+
+    public static Observable<Integer> publishListofItems() {
+        List<Integer> list = List.of(1, 2, 3, 4, 5);
+        return Observable.fromIterable(list);
+    }
+
+    public static void main(String[] args) {
+        //sequence of numbers
+//        publishNumbers().subscribe(System.out::println, System.out::println, () -> {
+//            System.out.println("Stream over");
+//        });
+//        publishLongNumbers().subscribe(System.out::println, System.out::println, () -> {
+//            System.out.println("Stream over");
+//        });
+        publishArrayOfItems().subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Stream over");
+        });
+        publishListofItems().subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Stream over");
+        });
+    }
+
+    private static Integer doubleIt(Integer item) {
+        return item * 2;
+    }
+
+    private static boolean isEven(Integer item) {
+        return item % 2 == 0;
+    }
+}
+..............................................................................................
+1.Single
+2.Maybe
+3.Completeable
+
+Streo types :
+ Bean
+   -Component,Service,Repository,Controller
+
+Rx java Streo Types:
+...................
+Observable - o---n 
+Single - only item
+Maybe - single or empty
+Completeable - only complete
+
+
+Single:
+......
+RxJava (and its derivatives like RxGroovy & RxScala) has developed an Observable variant called “Single.”
+
+A Single is something like an Observable, but instead of emitting a series of values — anywhere from none at all to an infinite number — it always either emits one value or an error notification.
+
+    public static void singleType() {
+        Single.create(emitter -> {
+            emitter.onSuccess("Hello");
+        }).subscribe(System.out::println);
+
+        Single.create(emitter -> {
+            emitter.onError(new RuntimeException("error"));
+        }) .subscribe(System.out::println, System.out::println);
+
+         Single.just(1).subscribe(System.out::println);
+    }
+
+
+Single 
+
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
+
+public class SingleItemPublisher {
+    //publish single item
+    public static Single<Integer> publishSingleItem(){
+        return Single.just(1);
+        
+    }
+    public static void main(String[] args) {
+        publishSingleItem().subscribe(System.out::println);
+    }
+}
+
+Completeable:
+
+only signal
+
+public static void completeTest() {
+        Completable.complete().subscribe(() -> System.out.println("Completeable"));
+    }
+
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Completable;
+
+public class CompleteablePublisher {
+    public static void main(String[] args) {
+        Completable.complete().subscribe(() -> System.out.println("Completeable"));
+    }
+}
+..............................................................................................
+				 Flowable
+
+Reactive manifesto
+ReactiveX.io
+
+Reactive Streams Spec
+Reactive Streams is an initiative to provide a standard for asynchronous stream processing with non-blocking back pressure
+
+Reactive Streams:
+
+It is spec.
+
+Back Pressure:
+
+Upstream is faster enough to stream data to downstream , where downstream is unable to process data.
+   -Back Pressure.
+
+When back pressure happens , 
+  -data loss
+  -data inconsisistency
+
+
+How to manage backpressure?
+we have various patterns
+
+Rxjava 1.x 
+ -Through backpressure operators
+Buffer
+Sample
+Debounce
+Window
+filter
+.....
+backpressure operators
+ strategies for coping with Observables that produce items more rapidly than their observers consume them
+
+
+1.Via Operators:
+
+Most of the Flitering Operaors are back pressure managed operators
+
+ debounce,distinct,ElementAt,filter,first,ignoreElements,Last,sample,skip,skipLast,take,takeLast.
+
+During backpressure, items may be droped
+ drop operators: fliter
+ collecting operators: window,buffer
+
+
+2.Reactive Pull
+..............
+Above two strategies manage backpressure by dropping items, if your application need to process all the items emitted by source observable then you can’t use those strategies.
+
+In this scenario, using reactive pull strategy is the right choice. In reactive pull, subscriber requests required number of items from observable by calling request().
+
+
+Reactive Pull:
+
+ Reactive programs supports push paradigm
+ Reactive programs supports even pull also
+
+
+PUSH + PULL = Reactive PULL
+
+Down Stream can control up stream with help of mediator object that is called
+"Subscription object"
+
+DownStream --------Subscription ---------UpStream
+
+DownStream --------Subscription ---------UpStream
+                        |
+                 request(no-elements)
+
+Reactive Streams:
+.................
+   Reactive Stream is spec published to enable backpressure and create Back Pressure streams.-https://www.reactive-streams.org/
+
+How provide backPressure handling feature at api level or Publisher level?
+
+Soultion : Publisher level, in order to provide publisher , Many companies joined together
+
+who published another spec "Reactive Stream"
+
+Reactive Streams is an initiative to provide a standard for asynchronous stream processing with non-blocking back pressure. This encompasses efforts aimed at runtime environments (JVM and JavaScript) as well as network protocols.
+
+
+
+The Team provided common spec:
+
+1.Publisher
+2.Subscriber
+3.Subscription
+4.Processor
+
+
+Flowable vs Observable
+
+Flowable 
+  emits 0...n items
+  backpressure ready streams
+  implements reactive stream spec
+
+Observable
+  emits 0..n items
+  no backpressure
+  no reactive stream stream spec.
+
+
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+
+public class ReactiveStreams {
+    static void sleep(long milliseconds) {
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        Flowable.range(1, 999_999_999)
+                .map(MyItem::new) //upstream is fast enough to send data
+                .subscribe(myItem -> {
+                    sleep(500); //down stream/subscriber are slow
+                    System.out.println("Received MyItem " +
+                            myItem.id);
+                });
+        sleep(Long.MAX_VALUE);
+    }
+
+    static final class MyItem {
+        final int id;
+
+        MyItem(int id) {
+            this.id = id;
+            System.out.println("Consuming myitem " + id);
+        }
+    }
+
+}
+.....................................................................................................
+
+Vertx and Rxjava ;
+
+Vertx provides reactive programming via vertx-rx 
+
+<dependency>
+ <groupId>io.vertx</groupId>
+ <artifactId>vertx-rx-java3</artifactId>
+ <version>4.2.4</version>
+</dependency>
+
+vertx provides high level abstraction on rxjava apis.
+
+Vertx provides rxjava version of every object in vertx.
+
+AbstractVerticle - io.vertx.core.AbstractVerticle
+Reactive Version:
+AbstractVerticle - 
+
+
+
+package com.unisys.rx;
+
+import io.reactivex.rxjava3.core.Single;
+import io.vertx.core.Promise;
+import io.vertx.example.util.Runner;
+import io.vertx.rxjava3.core.AbstractVerticle;
+import io.vertx.rxjava3.core.eventbus.EventBus;
+import io.vertx.rxjava3.core.http.HttpServer;
+import io.vertx.rxjava3.ext.web.client.HttpResponse;
+import io.vertx.rxjava3.ext.web.client.WebClient;
+import io.vertx.rxjava3.ext.web.codec.BodyCodec;
+
+class ReactiveWebClient extends AbstractVerticle {
+
+  @Override
+  public void start(Promise<Void> startFuture) throws Exception {
+    super.start(startFuture);
+    vertx.createHttpServer().requestHandler(req -> {
+      WebClient webClient = WebClient.create(vertx);
+      Single<HttpResponse<String>> request = webClient.get(8081, "localhost", "/").as(BodyCodec.string()).rxSend();
+      //fire the http call
+      request.subscribe(result -> {
+        req.response().end(result.body());
+      });
+    }).rxListen(3000).subscribe();
+  }
+}
+
+
+class GreeterReactive extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startFuture) throws Exception {
+    super.start(startFuture);
+    //reactive web server
+    EventBus eventBus = vertx.eventBus();
+
+    eventBus.consumer("com.unisys").toFlowable().subscribe(message -> {
+      System.out.println(message.body().toString());
+      message.reply("PONG");
+    });
+    vertx.setPeriodic(1000, v -> {
+      eventBus.rxRequest("com.unisys", "PING").subscribe(reply -> {
+        System.out.println("Received Reply " + reply.body());
+      });
+    });
+
+    //This is not enabled with Reactive Streams
+//    vertx.createHttpServer().requestHandler(httpServerRequest -> {
+//      httpServerRequest.response().end("Hello");
+//
+//    }).rxListen(8080).subscribe();
+    HttpServer httpServer = vertx.createHttpServer();
+    httpServer.requestStream().toFlowable().subscribe(req -> {
+      req.response().end("Stream data over http using web client");
+    });
+    httpServer.rxListen(8081).subscribe(System.out::println);
+
+
+  }
+}
+
+public class ReactiveVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ReactiveVerticle.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startFuture) throws Exception {
+    super.start(startFuture);
+    vertx.rxDeployVerticle(new GreeterReactive())
+      .subscribe(data -> System.out.println(data), System.out::println);
+    vertx.deployVerticle(new ReactiveWebClient());
+  }
+}
+
+........................................................................................................
+					Distrubuted Vertx
+........................................................................................................
+
+Vertx Types:
+...........
+
+1.Standard Vertx
+2.Clustered Vertx
+
+Distributed Architecture: Microservices
+.......................................
+
+
+Verticle Communication:
+......................
+
+1.Within Process : 
+
+  Within single Vertx
+
+2.among Vertx Engines
+
+Vertx - Clustering:
+...................
+
+Clustering , means organization application under one communication channel.
+
+Vertx uses integration/clustering technologies.
+
+Vertx uses hazelcast ClusterManager/provider by default.
+
+Cluster : group of something - group of verticles/vertx instance/jvm
+
+in order to connect vertx apps across processes, we need cordinator 
+-Bride softwares
+
+Vertx can work with
+-hazelcast
+-apache zookeeper
+-apache ignite
+-apache Infinispan
+
+ClusterManagers
+
+by default, vertx has hazelcast, we dont need to configure by default.
+
+How to enable clustering?
+
+In vertx clustering can be enabled in two ways
+
+1.through code
+
+Vertx Configuration;
+
+Types of vertx:
+1.standard vertx
+2.clusteredVertx
+
+Vertx.createClusteredVertx()
+
+
+
+ClusterManager mgr = new HazelcastClusterManager();
+
+VertxOptions options = new VertxOptions().setClusterManager(mgr);
+
+Vertx.clusteredVertx(options, res -> {
+  if (res.succeeded()) {
+    Vertx vertx = res.result();
+
+  } else {
+    // failed!
+  }
+});
+
+..............................................................................................
+			Scalability : How to run multiple instance of the same service
+.............................................................................................
+package com.unisys.distributed.scalling;
+
+import io.vertx.rxjava3.core.AbstractVerticle;
+import io.vertx.rxjava3.core.http.HttpServer;
+
+//SCALE THIS Service into multiple instances
+public class GreeterService extends AbstractVerticle {
+  @Override
+  public void start() throws Exception {
+    super.start();
+    HttpServer httpServer = vertx.createHttpServer();
+    httpServer.requestStream().toFlowable().subscribe(req -> {
+      req.response().end("Hello!How are you : " + Thread.currentThread().getName() + " =>" + hashCode());
+    });
+    httpServer.rxListen(3000).subscribe(onSuccess -> {
+      System.out.println("Server is Running on " + onSuccess.actualPort());
+    });
+  }
+}
+
+package com.unisys.distributed.scalling;
+
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.example.util.Runner;
+import io.vertx.rxjava3.core.AbstractVerticle;
+
+
+public class ScallerDeployer extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(ScallerDeployer.class);
+  }
+
+  @Override
+  public void start(Promise<Void> startFuture) throws Exception {
+    super.start(startFuture);
+    DeploymentOptions options = new DeploymentOptions().setInstances(5);
+
+    vertx.rxDeployVerticle(GreeterService.class.getName(), options).subscribe(res -> {
+      System.out.println(GreeterService.class.getName() + " " + res);
+    }, err -> {
+      System.out.println(err);
+    });
+  }
+}
+
+
+Try to test :
+with chrome
+http://localhost:3000/
+Hello!How are you : vert.x-eventloop-thread-3 =>703670605
+
+and again with other client -postman
+http://localhost:3000/
+
+Hello!How are you : vert.x-eventloop-thread-5 =>94658234
+
+............................................................................................
+			Clustering : How to communicate across vertx Engine
+			         (Scallablity + High availablity)
+............................................................................................
+
+Vertx Configuration;
+
+Types of vertx:
+1.standard vertx
+2.clusteredVertx
+
+ClusterManager mgr = new HazelcastClusterManager();
+
+VertxOptions options = new VertxOptions().setClusterManager(mgr);
+
+Vertx.clusteredVertx(options, res -> {
+  if (res.succeeded()) {
+    Vertx vertx = res.result();
+    //deployment
+  } else {
+    // failed!
+  }
+});
+
+Configuring cluster manager:
+
+Vertx provides default-cluster.xml which is packaged inside cluster jar.
+
+if you want to override you can override cluster.xml file
+
+How to enable cluster feature?
+
+java -jar target/app.jar -cp . -cluster
+
+vertx run verticle -cp . -cluster
+
+via docker
+docker run -i -t vertx/vertx4-exec run verticle -cp . -cluster
+
+
+
+1.Clustering
+   
+   We can run multiple vertx applications and each application can communicate each other 
+via centeralized cluter channel software(hazelcast,zookeeper,apache ignite).
+
+in order to setup cluster on vertx engine
+1.we have to enable via Vertx.clusteredVertx Method.
+
+
+Demo setup:
+we are simulating two verticles running separtely. how we can do that
+
+-need to run two verticles having main method.
+
+Two verticles are exchanging message via event bus (Distributed Event Bus).
+
+
+ConsumerVerticle
+package com.unisys.distributed.cluster;
+
+import io.vertx.core.*;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+
+
+public class ConsumerVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    ClusterManager mgr = new HazelcastClusterManager();
+    VertxOptions options = new VertxOptions().setClusterManager(mgr).setHAEnabled(true).setHAGroup("g1");
+    Vertx.clusteredVertx(options, cluster -> {
+      if (cluster.succeeded()) {
+        //Get the reference of Cluster Powered Vertx Engine
+        Vertx vertx = cluster.result();
+        //deploy the verticle in cluster.
+        DeploymentOptions deploymentOptions = new DeploymentOptions().setInstances(3);
+        cluster.result().deployVerticle("com.unisys.distributed.cluster.ConsumerVerticle", deploymentOptions).onSuccess(res -> {
+          System.out.println("Deployment Id => " + res);
+        }).onFailure(err -> {
+          System.out.println(err);
+        });
+      } else {
+        // failed!
+        System.out.println("Cluster is failed" + cluster.cause());
+      }
+    });
+
+
+  }
+
+
+  @Override
+  public void start(Promise<Void> startFuture) throws Exception {
+    super.start(startFuture);
+    System.out.println("started");
+    EventBus eventBus = vertx.eventBus();
+    //Declare Consumer
+    MessageConsumer<String> consumer = eventBus.consumer("news.in.covid");
+    //handle/process the message/news
+    consumer.handler(news -> {
+      RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+      String jvmName = runtimeBean.getName();
+      System.out.println("Node  Name = " + jvmName);
+      long pid = Long.valueOf(jvmName.split("@")[0]);
+      System.out.println("PID  = " + pid + " Thread = " + Thread.currentThread().getName());
+      System.out.println("News 7's Today News : " + news.body());
+    });
+  }
+}
+
+Please run the above code:
+log4j:WARN No appenders could be found for logger (io.vertx.core.logging.LoggerFactory).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+Feb 06, 2022 4:28:47 PM com.hazelcast.instance.impl.HazelcastInstanceFactory
+WARNING: Hazelcast is starting in a Java modular environment (Java 9 and newer) but without proper access to required Java packages. Use additional Java arguments to provide Hazelcast access to Java internal API. The internal API access is used to get the best performance results. Arguments to be used:
+ --add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+Feb 06, 2022 4:28:47 PM com.hazelcast.system
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] Hazelcast 4.2.2 (20210811 - c38011e) starting at [192.168.0.105]:5702
+Feb 06, 2022 4:28:48 PM com.hazelcast.spi.discovery.integration.DiscoveryService
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] No discovery strategy is applicable for auto-detection
+Feb 06, 2022 4:28:48 PM com.hazelcast.instance.impl.Node
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] Using Multicast discovery
+Feb 06, 2022 4:28:48 PM com.hazelcast.cp.CPSubsystem
+WARNING: [192.168.0.105]:5702 [dev] [4.2.2] CP Subsystem is not enabled. CP data structures will operate in UNSAFE mode! Please note that UNSAFE mode will not provide strong consistency guarantees.
+Feb 06, 2022 4:28:48 PM com.hazelcast.internal.diagnostics.Diagnostics
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] Diagnostics disabled. To enable add -Dhazelcast.diagnostics.enabled=true to the JVM arguments.
+Feb 06, 2022 4:28:48 PM com.hazelcast.core.LifecycleService
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] [192.168.0.105]:5702 is STARTING
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.hazelcast.internal.networking.nio.SelectorOptimizer (file:/C:/Users/sasub/.m2/repository/com/hazelcast/hazelcast/4.2.2/hazelcast-4.2.2.jar) to field sun.nio.ch.SelectorImpl.selectedKeys
+WARNING: Please consider reporting this to the maintainers of com.hazelcast.internal.networking.nio.SelectorOptimizer
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+Feb 06, 2022 4:28:49 PM com.hazelcast.internal.cluster.impl.MulticastJoiner
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] Trying to join to discovered node: [192.168.0.105]:5701
+Feb 06, 2022 4:28:49 PM com.hazelcast.internal.server.tcp.TcpServerConnection
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] Initialized new cluster connection between /192.168.0.105:64429 and /192.168.0.105:5701
+Feb 06, 2022 4:28:55 PM com.hazelcast.internal.cluster.ClusterService
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] 
+
+Members {size:2, ver:2} [
+	Member [192.168.0.105]:5701 - bd057b19-0e66-431c-93ee-1c07194f13c4
+	Member [192.168.0.105]:5702 - ee414cdf-d3e2-4049-83ef-e95f527c5540 this
+]
+
+Feb 06, 2022 4:28:56 PM com.hazelcast.core.LifecycleService
+INFO: [192.168.0.105]:5702 [dev] [4.2.2] [192.168.0.105]:5702 is STARTED
+started
+started
+started
+Deployment Id => c2c972d6-43f6-4553-97e5-ef31de3e6f82
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-2
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-3
+Node  Name = 7976@LAPTOP-R2TGGFDL
+PID  = 7976 Thread = vert.x-eventloop-thread-1
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+News 7's Today News : Last 24 hrs, 50000 covid patients in India From  11808@LAPTOP-R2TGGFDL
+Node  Name = 7976@LAPTOP-R2TGGFDL
+
+
+
+package com.unisys.distributed.cluster;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+
+public class PublisherVerticle extends AbstractVerticle {
+
+  public static void main(String[] args) {
+    ClusterManager mgr = new HazelcastClusterManager();
+    VertxOptions options = new VertxOptions()
+      .setClusterManager(mgr).setHAEnabled(true).setHAGroup("g1");
+
+    Vertx.clusteredVertx(options, vertxAsyncResult -> {
+      if (vertxAsyncResult.succeeded()) {
+        //deploy verticles on cluster env.
+        DeploymentOptions deploymentOptions = new DeploymentOptions()
+          .setInstances(2).setHa(true);
+        vertxAsyncResult.result().deployVerticle("com.unisys.distributed.cluster.PublisherVerticle", deploymentOptions, res -> {
+          if (res.succeeded()) {
+            System.out.println("Deployment id is: " + res.result());
+          } else {
+            System.out.println("Deployment failed!" + res.cause());
+          }
+        });
+
+      } else {
+        System.out.println("Cluster up failed: " + vertxAsyncResult.cause());
+      }
+    });
+
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+    String jvmName = runtimeBean.getName();
+    //processid
+    long pid = Long.valueOf(jvmName.split("@")[0]);
+    vertx.setPeriodic(5000, ar -> {
+      System.out.println("PID  = " + pid + " Thread = " + Thread.currentThread().getName());
+      //publish message
+      String news = "Last 24 hrs, 50000 covid patients in India" + " From  " + jvmName;
+      vertx.eventBus().publish("news.in.covid", news);
+    });
+
+  }
+}
+
+
+"C:\Program Files\Java\jdk-11.0.11\bin\java.exe" "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2020.1.1\lib\idea_rt.jar=64290:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2020.1.1\bin" -Dfile.encoding=UTF-8 -classpath E:\session\UniSys\2022\Vertx-training\vertxstarter\target\classes;C:\Users\sasub\.m2\repository\io\vertx\vertx-core\4.2.4\vertx-core-4.2.4.jar;C:\Users\sasub\.m2\repository\io\netty\netty-common\4.1.73.Final\netty-common-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-buffer\4.1.73.Final\netty-buffer-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-transport\4.1.73.Final\netty-transport-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-handler\4.1.73.Final\netty-handler-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-codec\4.1.73.Final\netty-codec-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-tcnative-classes\2.0.46.Final\netty-tcnative-classes-2.0.46.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-handler-proxy\4.1.73.Final\netty-handler-proxy-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-codec-socks\4.1.73.Final\netty-codec-socks-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-codec-http\4.1.73.Final\netty-codec-http-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-codec-http2\4.1.73.Final\netty-codec-http2-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-resolver\4.1.73.Final\netty-resolver-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-resolver-dns\4.1.73.Final\netty-resolver-dns-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\io\netty\netty-codec-dns\4.1.73.Final\netty-codec-dns-4.1.73.Final.jar;C:\Users\sasub\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.13.1\jackson-core-2.13.1.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-web\4.2.4\vertx-web-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-web-common\4.2.4\vertx-web-common-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-auth-common\4.2.4\vertx-auth-common-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-bridge-common\4.2.4\vertx-bridge-common-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-web-client\4.2.4\vertx-web-client-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-jdbc-client\4.2.4\vertx-jdbc-client-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-sql-client\4.2.4\vertx-sql-client-4.2.4.jar;C:\Users\sasub\.m2\repository\com\mchange\c3p0\0.9.5.5\c3p0-0.9.5.5.jar;C:\Users\sasub\.m2\repository\com\mchange\mchange-commons-java\0.2.19\mchange-commons-java-0.2.19.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-config\4.2.4\vertx-config-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-config-git\4.2.4\vertx-config-git-4.2.4.jar;C:\Users\sasub\.m2\repository\org\eclipse\jgit\org.eclipse.jgit\4.4.1.201607150455-r\org.eclipse.jgit-4.4.1.201607150455-r.jar;C:\Users\sasub\.m2\repository\com\jcraft\jsch\0.1.53\jsch-0.1.53.jar;C:\Users\sasub\.m2\repository\com\googlecode\javaewah\JavaEWAH\0.7.9\JavaEWAH-0.7.9.jar;C:\Users\sasub\.m2\repository\org\apache\httpcomponents\httpclient\4.5.3\httpclient-4.5.3.jar;C:\Users\sasub\.m2\repository\org\apache\httpcomponents\httpcore\4.4.6\httpcore-4.4.6.jar;C:\Users\sasub\.m2\repository\commons-logging\commons-logging\1.1.1\commons-logging-1.1.1.jar;C:\Users\sasub\.m2\repository\commons-codec\commons-codec\1.15\commons-codec-1.15.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-hazelcast\4.2.4\vertx-hazelcast-4.2.4.jar;C:\Users\sasub\.m2\repository\com\hazelcast\hazelcast\4.2.2\hazelcast-4.2.2.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-rx-java3\4.2.4\vertx-rx-java3-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-rx-java3-gen\4.2.4\vertx-rx-java3-gen-4.2.4.jar;C:\Users\sasub\.m2\repository\io\reactivex\rxjava3\rxjava\3.0.13\rxjava-3.0.13.jar;C:\Users\sasub\.m2\repository\org\reactivestreams\reactive-streams\1.0.3\reactive-streams-1.0.3.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-rx-gen\4.2.4\vertx-rx-gen-4.2.4.jar;C:\Users\sasub\.m2\repository\io\vertx\vertx-codegen\4.2.4\vertx-codegen-4.2.4.jar;C:\Users\sasub\.m2\repository\org\slf4j\slf4j-log4j12\1.7.26\slf4j-log4j12-1.7.26.jar;C:\Users\sasub\.m2\repository\org\slf4j\slf4j-api\1.7.26\slf4j-api-1.7.26.jar;C:\Users\sasub\.m2\repository\log4j\log4j\1.2.17\log4j-1.2.17.jar;C:\Users\sasub\.m2\repository\org\hsqldb\hsqldb\2.3.4\hsqldb-2.3.4.jar com.unisys.distributed.cluster.PublisherVerticle
+log4j:WARN No appenders could be found for logger (io.vertx.core.logging.LoggerFactory).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+Feb 06, 2022 4:28:38 PM com.hazelcast.instance.impl.HazelcastInstanceFactory
+WARNING: Hazelcast is starting in a Java modular environment (Java 9 and newer) but without proper access to required Java packages. Use additional Java arguments to provide Hazelcast access to Java internal API. The internal API access is used to get the best performance results. Arguments to be used:
+ --add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+Feb 06, 2022 4:28:39 PM com.hazelcast.system
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Hazelcast 4.2.2 (20210811 - c38011e) starting at [192.168.0.105]:5701
+Feb 06, 2022 4:28:39 PM com.hazelcast.spi.discovery.integration.DiscoveryService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] No discovery strategy is applicable for auto-detection
+Feb 06, 2022 4:28:40 PM com.hazelcast.instance.impl.Node
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Using Multicast discovery
+Feb 06, 2022 4:28:40 PM com.hazelcast.cp.CPSubsystem
+WARNING: [192.168.0.105]:5701 [dev] [4.2.2] CP Subsystem is not enabled. CP data structures will operate in UNSAFE mode! Please note that UNSAFE mode will not provide strong consistency guarantees.
+Feb 06, 2022 4:28:40 PM com.hazelcast.internal.diagnostics.Diagnostics
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Diagnostics disabled. To enable add -Dhazelcast.diagnostics.enabled=true to the JVM arguments.
+Feb 06, 2022 4:28:40 PM com.hazelcast.core.LifecycleService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] [192.168.0.105]:5701 is STARTING
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.hazelcast.internal.networking.nio.SelectorOptimizer (file:/C:/Users/sasub/.m2/repository/com/hazelcast/hazelcast/4.2.2/hazelcast-4.2.2.jar) to field sun.nio.ch.SelectorImpl.selectedKeys
+WARNING: Please consider reporting this to the maintainers of com.hazelcast.internal.networking.nio.SelectorOptimizer
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+Feb 06, 2022 4:28:42 PM com.hazelcast.internal.cluster.ClusterService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] 
+
+Members {size:1, ver:1} [
+	Member [192.168.0.105]:5701 - bd057b19-0e66-431c-93ee-1c07194f13c4 this
+]
+
+Feb 06, 2022 4:28:42 PM com.hazelcast.core.LifecycleService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] [192.168.0.105]:5701 is STARTED
+Feb 06, 2022 4:28:43 PM com.hazelcast.internal.partition.impl.PartitionStateManager
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Initializing cluster partition table arrangement...
+Deployment id is: bc2c22e3-e23c-481a-a98e-866e365d2e6e
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+Feb 06, 2022 4:28:49 PM com.hazelcast.internal.server.tcp.TcpServerConnection
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Initialized new cluster connection between /192.168.0.105:5701 and /192.168.0.105:64429
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+Feb 06, 2022 4:28:55 PM com.hazelcast.internal.cluster.ClusterService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] 
+
+Members {size:2, ver:2} [
+	Member [192.168.0.105]:5701 - bd057b19-0e66-431c-93ee-1c07194f13c4 this
+	Member [192.168.0.105]:5702 - ee414cdf-d3e2-4049-83ef-e95f527c5540
+]
+
+Feb 06, 2022 4:28:55 PM com.hazelcast.internal.partition.InternalPartitionService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Remaining migration tasks: 1. (repartitionTime=Thu Jan 01 05:30:00 IST 1970, plannedMigrations=0, completedMigrations=0, remainingMigrations=0, totalCompletedMigrations=0)
+Feb 06, 2022 4:28:55 PM com.hazelcast.internal.partition.impl.MigrationManager
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Repartitioning cluster data. Migration tasks count: 271
+Feb 06, 2022 4:28:55 PM com.hazelcast.internal.partition.impl.MigrationManager
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] All migration tasks have been completed. (repartitionTime=Sun Feb 06 16:28:55 IST 2022, plannedMigrations=271, completedMigrations=271, remainingMigrations=0, totalCompletedMigrations=271)
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+Feb 06, 2022 4:29:21 PM com.hazelcast.internal.server.tcp.TcpServerConnection
+WARNING: [192.168.0.105]:5701 [dev] [4.2.2] Connection[id=1, /192.168.0.105:5701->/192.168.0.105:64429, qualifier=null, endpoint=[192.168.0.105]:5702, alive=false, connectionType=MEMBER, planeIndex=0] closed. Reason: Exception in Connection[id=1, /192.168.0.105:5701->/192.168.0.105:64429, qualifier=null, endpoint=[192.168.0.105]:5702, alive=true, connectionType=MEMBER, planeIndex=0], thread=hz.gifted_hypatia.IO.thread-in-0
+java.io.IOException: An existing connection was forcibly closed by the remote host
+	at java.base/sun.nio.ch.SocketDispatcher.read0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:43)
+	at java.base/sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:276)
+	at java.base/sun.nio.ch.IOUtil.read(IOUtil.java:245)
+	at java.base/sun.nio.ch.IOUtil.read(IOUtil.java:223)
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:358)
+	at com.hazelcast.internal.networking.nio.NioInboundPipeline.process(NioInboundPipeline.java:119)
+	at com.hazelcast.internal.networking.nio.NioThread.processSelectionKey(NioThread.java:383)
+	at com.hazelcast.internal.networking.nio.NioThread.processSelectionKeys(NioThread.java:368)
+	at com.hazelcast.internal.networking.nio.NioThread.selectLoop(NioThread.java:294)
+	at com.hazelcast.internal.networking.nio.NioThread.executeRun(NioThread.java:249)
+	at com.hazelcast.internal.util.executor.HazelcastManagedThread.run(HazelcastManagedThread.java:102)
+
+Feb 06, 2022 4:29:21 PM com.hazelcast.internal.server.tcp.TcpServerConnector
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Connecting to /192.168.0.105:5702, timeout: 10000, bind-any: true
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+Feb 06, 2022 4:29:23 PM com.hazelcast.internal.server.tcp.TcpServerConnector
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Could not connect to: /192.168.0.105:5702. Reason: IOException[Connection refused: no further information to address /192.168.0.105:5702]
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+Feb 06, 2022 4:29:30 PM com.hazelcast.internal.server.tcp.TcpServerConnector
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Connecting to /192.168.0.105:5702, timeout: 10000, bind-any: true
+Feb 06, 2022 4:29:32 PM com.hazelcast.internal.server.tcp.TcpServerConnector
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Could not connect to: /192.168.0.105:5702. Reason: IOException[Connection refused: no further information to address /192.168.0.105:5702]
+Feb 06, 2022 4:29:32 PM com.hazelcast.internal.server.tcp.TcpServerConnector
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Connecting to /192.168.0.105:5702, timeout: 10000, bind-any: true
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+Feb 06, 2022 4:29:34 PM com.hazelcast.internal.server.tcp.TcpServerConnector
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Could not connect to: /192.168.0.105:5702. Reason: IOException[Connection refused: no further information to address /192.168.0.105:5702]
+Feb 06, 2022 4:29:34 PM com.hazelcast.internal.server.tcp.TcpServerConnectionErrorHandler
+WARNING: [192.168.0.105]:5701 [dev] [4.2.2] Removing connection to endpoint [192.168.0.105]:5702 Cause => java.io.IOException {Connection refused: no further information to address /192.168.0.105:5702}, Error-Count: 5
+Feb 06, 2022 4:29:34 PM com.hazelcast.internal.cluster.impl.MembershipManager
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Removing Member [192.168.0.105]:5702 - ee414cdf-d3e2-4049-83ef-e95f527c5540
+Feb 06, 2022 4:29:34 PM com.hazelcast.internal.cluster.ClusterService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] 
+
+Members {size:1, ver:3} [
+	Member [192.168.0.105]:5701 - bd057b19-0e66-431c-93ee-1c07194f13c4 this
+]
+
+Feb 06, 2022 4:29:34 PM com.hazelcast.transaction.TransactionManagerService
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Committing/rolling-back live transactions of [192.168.0.105]:5702, UUID: ee414cdf-d3e2-4049-83ef-e95f527c5540
+Feb 06, 2022 4:29:34 PM com.hazelcast.internal.partition.impl.MigrationManager
+INFO: [192.168.0.105]:5701 [dev] [4.2.2] Partition balance is ok, no need to repartition.
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-1
+PID  = 11808 Thread = vert.x-eventloop-thread-2
+............................................................................................
+				3.High Avaliablity and Fail-Over
+............................................................................................
+
+When we are running vertx in cluster env, there is possiblity of vertx instances may die abruuptly.
+The verticle is running in the same vertx engine, we need to move to antoher vertx engines
+
+Rules for fail-over:
+1.All vertx engine should be part of cluster
+2.All vertx engines should have common "cluster-group-id"
+3.Fail over is enabled by killing process only, not ctrl+c or Kill -SIGINT
+
+How to enable fail-over?
+
+via command line
+
+Steps: 
+
+Open cmd  3 command prompt
+
+1.vertx run ConsumerVerticle.java -ha -hagroup g1
+2.vertx run PublisherVerticle.java -ha -hagroup g1
+3.vertx bare -hagroup g1
+
+via code
+    VertxOptions options = new VertxOptions().setClusterManager(mgr)
+   .setHAEnabled(true).setHAGroup("g1");
+
+
+How  to enable auto scalling(means if any one instance dies ,automatically we can redeploy into another instances).
+
+docker run -i -t vertx/vertx4-exec bare -hagroup g1
+
+
+.............................................................................................
+
+package com.cts.vertx.cluster;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+
+public class PublisherVerticle extends AbstractVerticle {
+
+  public static void main(String[] args) {
+    ClusterManager mgr = new HazelcastClusterManager();
+    VertxOptions options = new VertxOptions().setClusterManager(mgr).setHAEnabled(true).setHAGroup("g1");
+
+    Vertx.clusteredVertx(options, vertxAsyncResult -> {
+      if (vertxAsyncResult.succeeded()) {
+        //deploy verticles on cluster env.
+        DeploymentOptions deploymentOptions = new DeploymentOptions()
+          .setInstances(2).setHa(true);
+        vertxAsyncResult.result().deployVerticle("com.cts.vertx.cluster.PublisherVerticle", deploymentOptions, res -> {
+          if (res.succeeded()) {
+            System.out.println("Deployment id is: " + res.result());
+          } else {
+            System.out.println("Deployment failed!");
+          }
+        });
+
+      } else {
+        System.out.println("Cluster up failed: " + vertxAsyncResult.cause());
+      }
+    });
+
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+    String jvmName = runtimeBean.getName();
+    //processid
+    long pid = Long.valueOf(jvmName.split("@")[0]);
+    vertx.setPeriodic(5000, ar -> {
+      System.out.println("PID  = " + pid + " Thread = " + Thread.currentThread().getName());
+      //publish message
+      String news = "Last 24 hrs, 50000 covid patients in India" + " From  " + jvmName;
+      vertx.eventBus().publish("news.in.covid", news);
+    });
+
+  }
+}
+.............................................................................................
+package com.cts.vertx.cluster;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+
+public class ConsumerVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    ClusterManager mgr = new HazelcastClusterManager();
+    VertxOptions options = new VertxOptions().setClusterManager(mgr).setHAEnabled(true).setHAGroup("g1");
+    Vertx.clusteredVertx(options, cluster -> {
+      if (cluster.succeeded()) {
+        DeploymentOptions deploymentOptions = new DeploymentOptions();
+        cluster.result().deployVerticle("com.cts.vertx.cluster.ConsumerVerticle", deploymentOptions, res -> {
+          if (res.succeeded()) {
+            System.out.println("Deployment id is: " + res.result());
+          } else {
+            System.out.println("Deployment failed!");
+          }
+        });
+      } else {
+        System.out.println("Cluster up failed: " + cluster.cause());
+      }
+    });
+  }
+
+  private void consumeNews() {
+    EventBus eventBus = vertx.eventBus();
+    //Declare Consumer
+    MessageConsumer<String> consumer = eventBus.consumer("news.in.covid");
+    //handle/process the message/news
+    consumer.handler(news -> {
+      RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+      String jvmName = runtimeBean.getName();
+      System.out.println("Node  Name = " + jvmName);
+      long pid = Long.valueOf(jvmName.split("@")[0]);
+      System.out.println("PID  = " + pid + " Thread = " + Thread.currentThread().getName());
+      System.out.println("News 7's Today News : " + news.body());
+    });
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    consumeNews();
+  }
+}
+
+.............................................................................................
+Taskkill /PID 12696 /F
+.............................................................................................
+					Shared Resources
+
+
+
+Service Discovery and Registry:
+..............................
+
+Lookup server and naming server.
+
+Data Base server which stores 'resources' :  web site address : dns server
+
+Same concept is used in distributed programming/microservices:
+-> RMI, EJB,DCOM
+
+Why Service Registry?
+
+ Registry is data base, used to store resources in centralized place.
+
+The programs and applications  are located in networks , so it is difficult to locate/search resources.
+
+Service discovery :
+
+ The process of looking up resources, called service discovery.
+
+
+Registry Server:
+ It is key-value pair database, Where you can store and "lookup"  resources.
+
+What we can store inside Registry Server in vertx?
+
+ Resources:
+
+Types of Resources(Services):
+.............................
+The services you can register into registry
+
+HTTP Endpoint -HttpEndPoint.createRecord
+Event Bus Service -EventBus.createRecord
+Message Source
+JDBC Data Source
+Redis Data Source
+MongoDb Data Source
+
+Shared Data / Resource:
+
+ In vertx you can store resources in centrialized place, and you share it across application.
+
+eg: you have one jdbc connection, where you will store connection object, thats where shared data comes into picture.
+
+
+Shared data architecture is "Service Discovery and Registry"
+
+Implementation:
+
+What you need?
+
+1.Registry server- where you can store all shared resources(httpendpoint,jdbcconnection,eventbus...)
+
+Vertx provides default built in Registry Server:
+...............................................
+-Key value data structure;
+  Map- implementations.
+
+Popular Registry Servers:
+.........................
+1.eureka server
+2.Apache zoo keeper
+3.Consule
+4.Kubernetes
+5.Redis
+etc....
+
+
+Steps:
+package com.unisys.distributed.serviceregistry;
+
+import io.vertx.core.AbstractVerticle;
+
+public class HelloRestService extends AbstractVerticle {
+  @Override
+  public void start() throws Exception {
+    super.start();
+    vertx.createHttpServer().requestHandler(request -> {
+      if (request.path().equals("/api/hello")) {
+        request.response().end("<h1>Hello! I am coming via Service Discovery<h1>");
+      }
+    }).listen(3001);
+  }
+}
+
+Publisher
+package com.unisys.distributed.serviceregistry;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.json.JsonObject;
+import io.vertx.servicediscovery.Record;
+import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.ServiceDiscoveryOptions;
+import io.vertx.servicediscovery.types.HttpEndpoint;
+
+
+public class ServicePublisherVerticle extends AbstractVerticle {
+  @Override
+  public void start() throws Exception {
+    super.start();
+    //Service Discovery Options
+//    ServiceDiscovery.create(vertx)
+//      .registerServiceImporter(new ZookeeperServiceImporter()
+//        , new JsonObject().put("connection", "127.0.0.1:2181"));
+    ServiceDiscoveryOptions discoveryOptions = new ServiceDiscoveryOptions();
+    //enable discovery server : apache zoo keeper
+    discoveryOptions.setBackendConfiguration(new JsonObject()
+      .put("connection", "127.0.0.1:2181")
+      .put("ephemeral", true)
+      .put("guaranteed", true)
+      .put("basePath", "/services/my-backend")
+    );
+    ServiceDiscovery discovery = ServiceDiscovery.create(vertx, discoveryOptions);
+
+    //Record Creation,Record type is Resource Type;storing webclient Resource into registry
+    Record httpEndPointRecord = HttpEndpoint.createRecord("myrecord", "localhost", 3001, "/api/hello");
+
+    //publish: add record into zookeeper
+    discovery.publish(httpEndPointRecord, ar -> {
+      if (ar.succeeded()) {
+        System.out.println("Successfully published ..>>>>" + ar.result().toJson());
+      } else {
+        System.out.println(" Not Published " + ar.cause());
+      }
+    });
+
+  }
+}
+
+Consumer
+package com.unisys.distributed.serviceregistry;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.ServiceDiscoveryOptions;
+import io.vertx.servicediscovery.types.HttpEndpoint;
+
+public class ServiceConsumerVerticle extends AbstractVerticle {
+  @Override
+  public void start() throws Exception {
+    super.start();
+    ServiceDiscoveryOptions discoveryOptions = new ServiceDiscoveryOptions();
+    //enable discovery server : apache zoo keeper
+    discoveryOptions.setBackendConfiguration(new JsonObject()
+      .put("connection", "127.0.0.1:2181")
+      .put("ephemeral", true)
+      .put("guaranteed", true)
+      .put("basePath", "/services/my-backend")
+    );
+    ServiceDiscovery discovery = ServiceDiscovery.create(vertx, discoveryOptions);
+
+    vertx.createHttpServer().requestHandler(req -> {
+      HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "myrecord"), sar -> {
+        // get web client
+        WebClient webClient = sar.result();
+        webClient.get("/api/hello").send(res -> {
+          System.out.println("Response is ready!");
+          req.response().end(res.result().bodyAsString());
+        });
+        req.response().endHandler(ar -> {
+          //remove /release discovery record
+          ServiceDiscovery.releaseServiceObject(discovery, webClient);
+        });
+      });
+
+
+    }).listen(3000, ar -> {
+      System.out.println("Service Consumer Service ");
+    });
+
+
+  }
+}
+package com.unisys.distributed.serviceregistry;
+
+import io.vertx.core.Vertx;
+
+public class ServiceDiscoveryMainVerticle {
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new HelloRestService());
+    vertx.deployVerticle(new ServicePublisherVerticle());
+    vertx.deployVerticle(new ServiceConsumerVerticle());
+  }
+}
+..............................................................................................
+				Resilence - Fault Management
+..............................................................................................
+
+Vert.x Provides circuit Breaker is an implementation of Circuit Breaker pattern.
+
+It keeps tracks of number of failures and opens the circuit when a threshold is reached.
+optionally fallback is given.
+
+States CB:
+
+1.closed
+   -Application is working well
+2.open
+  -Application is failing
+3.Half Open
+  -Application is recovering from failures
+
+
+if cb in open state
+ What to do? or how to react for failures.
+
+When cb can open?
+
+ if max failures reached
+ if timeout is reached
+  
+
+1.Circuit Breaker Configuration.
+
+CircuitBreaker breaker = CircuitBreaker.create("my-circuit-breaker", vertx,
+    new CircuitBreakerOptions()
+        .setMaxFailures(5) // number of failure before opening the circuit
+        .setTimeout(2000) // consider a failure if the operation does not succeed in time
+        .setFallbackOnFailure(true) // do we call the fallback on failure
+        .setResetTimeout(10000) // time spent in open state before attempting to re-try
+);
+
+// ---
+// Store the circuit breaker in a field and access it as follows
+// ---
+
+breaker.execute(promise -> {
+  // some code executing with the breaker
+  // the code reports failures or success on the given promise.
+  // if this promise is marked as failed, the breaker increased the
+  // number of failures
+}).onComplete(ar -> {
+  // Get the operation result.
+});
+ 
+
+
+package com.unisys.distributed.faulttolerence;
+
+import io.vertx.circuitbreaker.CircuitBreaker;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+
+public class CircuitBreakerPatternVerticle extends AbstractVerticle {
+  @Override
+  public void start(Promise<Void> startPromise) throws Exception {
+    super.start(startPromise);
+    CircuitBreakerOptions options = new CircuitBreakerOptions();
+    options.setMaxFailures(2);// no of failures will be allowed , after that , ciruit will open
+    options.setTimeout(3000); // consider a failure if the operation does not succeed in time
+    options.setFallbackOnFailure(true); // if any failure, should i handle fallback or not
+    options.setResetTimeout(5000); // time spent in open state before attempting to retry.
+
+    CircuitBreaker circuitBreaker = CircuitBreaker.create("my-circuit-breaker", vertx, options);
+    vertx.createHttpServer().requestHandler(req -> {
+      circuitBreaker.executeWithFallback(future -> {
+        //risky code
+        WebClient client = WebClient.create(vertx);
+        client.get(3000, "localhost", "/").send(ar -> {
+          // Obtain response
+          HttpResponse<Buffer> response = ar.result();
+          if (response.statusCode() != 200) {
+            future.fail("HTTP error");
+          } else {
+            future.complete(response.bodyAsString());
+          }
+        });
+      }, v -> {
+        // Executed when the circuit is opened
+        return "Hello, I am fallback";
+      }).onComplete(ar -> {
+        // Do something with the result
+        if (ar.succeeded()) {
+          //System.out.println(ar.result());
+          req.response().end(ar.result());
+        } else {
+          System.out.println(ar.cause());
+
+        }
+      });
+    }).listen(8080);
+
+  }
+}
+package com.unisys.distributed.faulttolerence;
+
+import io.vertx.core.AbstractVerticle;
+
+public class SomeService extends AbstractVerticle {
+  @Override
+  public void start() throws Exception {
+    super.start();
+    vertx.createHttpServer().requestHandler(r -> {
+      vertx.setTimer(5000, ar -> {
+        r.response().end("I am fine but delayed!");
+      });
+    }).listen(3000);
+  }
+}
+package com.unisys.distributed.faulttolerence;
+
+import io.vertx.core.Vertx;
+
+public class CBDeployer {
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new SomeService());
+    vertx.deployVerticle(new CircuitBreakerPatternVerticle());
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

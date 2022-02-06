@@ -34,25 +34,25 @@ class ApplicationVerticle extends AbstractVerticle {
     // System.out.println("hello");
     //readFromFile
     //readFromFile();
+    ConfigStoreOptions git = new ConfigStoreOptions()
+      .setType("git")
+      .setConfig(new JsonObject()
+        .put("url", "https://github.com/cescoffier/vertx-config-test.git")
+        .put("path", "local")
+        .put("filesets",
+          new JsonArray().add(new JsonObject().put("pattern", "*.json"))));
 
+    ConfigRetriever retriever = ConfigRetriever.create(vertx,
+      new ConfigRetrieverOptions().addStore(git));
+
+    retriever.getConfig().onSuccess(jsonObject -> {
+      System.out.println("inside config" + jsonObject);
+    }).onFailure(err -> {
+      System.out.println("error " + err.getMessage());
+
+    });
     vertx.createHttpServer().requestHandler(httpServerRequest -> {
-      ConfigStoreOptions git = new ConfigStoreOptions()
-        .setType("git")
-        .setConfig(new JsonObject()
-          .put("url", "https://github.com/cescoffier/vertx-config-test.git")
-          .put("path", "local")
-          .put("filesets",
-            new JsonArray().add(new JsonObject().put("pattern", "*.json"))));
 
-      ConfigRetriever retriever = ConfigRetriever.create(vertx,
-        new ConfigRetrieverOptions().addStore(git));
-
-      retriever.getConfig().onSuccess(jsonObject -> {
-        System.out.println("inside config" + jsonObject);
-      }).onFailure(err -> {
-        System.out.println("error " + err.getMessage());
-
-      });
       httpServerRequest.response().end("Hello");
     }).listen(8080, ar -> {
       System.out.println("server is running");
